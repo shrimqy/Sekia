@@ -1,6 +1,5 @@
-package com.dokja.sekira.ui.theme
+package com.komu.sekia.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

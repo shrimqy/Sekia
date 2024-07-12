@@ -1,14 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
-    namespace = "com.dokja.sekira"
+    namespace = "com.komu.sekia"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.dokja.sekira"
+        applicationId = "com.komu.sekia"
         minSdk = 29
         targetSdk = 34
         versionCode = 1

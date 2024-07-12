@@ -1,4 +1,4 @@
-package com.dokja.sekira
+package com.komu.seki.ui
 
 import org.junit.Test
 

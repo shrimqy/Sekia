@@ -1,4 +1,4 @@
-package com.dokja.sekira.ui.theme
+package com.komu.sekia.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

@@ -19,6 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Sekira"
+rootProject.name = "Sekia"
 include(":app")
- 
+include(":core:common")
+include(":core:ui")
