@@ -23,3 +23,4 @@ rootProject.name = "Sekia"
 include(":app")
 include(":core:common")
 include(":core:presentation")
+include(":network")

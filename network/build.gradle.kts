@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.komu.seki.presentation"
+    namespace = "komu.seki.network"
     compileSdk = 34
 
     defaultConfig {
