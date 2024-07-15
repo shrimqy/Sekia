@@ -3,9 +3,8 @@ plugins {
 }
 
 dependencies {
-//    implementation(alias.)
-//    implementation(kotlinx.gradle)
-//    implementation(kotlinx.compose.compiler.gradle)
+    compileOnly(libs.gradle.plugin)
+    compileOnly(libs.kotlin.plugin)
 }
 
 repositories {

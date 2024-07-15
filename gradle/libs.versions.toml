@@ -12,12 +12,12 @@ espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.3"
 navigation = "2.7.7"
 
+hilt = "2.51.1"
+hilt-androidx = "1.2.0"
+
 composeBom = "2024.06.00"
 compose-coil = "2.6.0"
 compose-activity = "1.9.0"
-compose-lazyColumnScrollbar = "2.0.6"
-compose-landscapist-glide = "2.2.5"
-compose-testing-ui = "1.6.3"
 
 compose-ui = "1.6.8"
 compose-material-icons-extended = "1.6.8"
@@ -40,6 +40,12 @@ core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = 
 # Coil
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "compose-coil" }
 
+# Hilt
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref ="hilt"}
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt"}
+hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hilt-androidx"}
+hilt-androidx-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "hilt-androidx" }
+
 # Compose
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose-ui" }
@@ -59,14 +65,20 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
 
+# gradle
+gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+
 
 [bundles]
 compose-android = [
