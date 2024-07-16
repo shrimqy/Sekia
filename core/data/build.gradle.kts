@@ -4,12 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.komu.seki.core.common"
+    namespace = "komu.seki.data"
     compileSdk = 34
 
     defaultConfig {
         minSdk = 29
 
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
 
@@ -29,12 +30,15 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-
 }
 
 dependencies {
+    implementation(project(":core:common"))
+
 
     implementation(libs.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(libs.datastore)
+    implementation(libs.hilt.android)
 }

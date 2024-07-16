@@ -54,6 +54,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:data"))
+
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
@@ -61,6 +63,7 @@ dependencies {
     implementation(libs.bundles.compose.android)
     implementation(libs.coil.compose)
     implementation(libs.compose.navigation)
+    implementation(libs.splashscreen)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
