@@ -9,13 +9,14 @@ import androidx.lifecycle.viewModelScope
 import com.komu.sekia.navigation.Graph
 import dagger.hilt.android.lifecycle.HiltViewModel
 import komu.seki.data.repository.PreferencesDatastore
+import komu.seki.data.repository.PreferencesRepository
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val preferencesDatastore: PreferencesDatastore
+    private val preferencesRepository: PreferencesRepository
 ): ViewModel() {
     var splashCondition by mutableStateOf(true)
         private set
@@ -24,7 +25,7 @@ class MainViewModel @Inject constructor(
         private set
     init {
         Log.d("MainViewModel", "ViewModel initialized")
-        preferencesDatastore.readOnboardingStatus().onEach { onboardingComplete ->
+        preferencesRepository.readOnboardingStatus().onEach { onboardingComplete ->
             Log.d("MainViewModel", "Onboarding status: $onboardingComplete")
             startDestination = if (onboardingComplete) {
                 Graph.MainScreenGraph

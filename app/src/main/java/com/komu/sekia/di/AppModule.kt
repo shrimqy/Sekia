@@ -17,9 +17,10 @@ object AppModule {
     @Provides
     fun provideAppContext(@ApplicationContext context: Context) = context
 
+
     @Provides
     @Singleton
-    fun providesPreferencesDatastore(
+    fun providesPreferencesRepository(
         application: Application
     ): PreferencesRepository = PreferencesDatastore(context = application)
 }
