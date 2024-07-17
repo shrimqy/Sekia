@@ -8,15 +8,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.komu.sekia.navigation.Graph
 import dagger.hilt.android.lifecycle.HiltViewModel
-import komu.seki.data.repository.PreferencesDatastore
-import komu.seki.data.repository.PreferencesRepository
+import komu.seki.domain.PreferencesRepository
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: komu.seki.domain.PreferencesRepository
 ): ViewModel() {
     var splashCondition by mutableStateOf(true)
         private set

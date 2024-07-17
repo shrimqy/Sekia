@@ -8,7 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import komu.seki.data.repository.PreferencesDatastore
-import komu.seki.data.repository.PreferencesRepository
+import komu.seki.domain.PreferencesRepository
 import javax.inject.Singleton
 
 @Module

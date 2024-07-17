@@ -17,7 +17,7 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ap
 
 class PreferencesDatastore @Inject constructor(
     @ApplicationContext private val context: Context
-) : PreferencesRepository {
+) : komu.seki.domain.PreferencesRepository {
 private object PreferencesKeys{
         val ONBOARDING = booleanPreferencesKey(Constants.ONBOARDING)
     }
