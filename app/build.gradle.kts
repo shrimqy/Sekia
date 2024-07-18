@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.splashscreen)
     implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)

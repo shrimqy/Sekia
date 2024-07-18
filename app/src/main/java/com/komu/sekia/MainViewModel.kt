@@ -15,7 +15,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    private val preferencesRepository: komu.seki.domain.PreferencesRepository
+    preferencesRepository: PreferencesRepository
 ): ViewModel() {
     var splashCondition by mutableStateOf(true)
         private set
