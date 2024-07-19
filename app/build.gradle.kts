@@ -56,10 +56,10 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
+    implementation(project(":core:presentation"))
 
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose.android)
     implementation(libs.coil.compose)

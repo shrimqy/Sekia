@@ -29,7 +29,7 @@ class MainViewModel @Inject constructor(
             startDestination = if (onboardingComplete) {
                 Graph.MainScreenGraph
             } else  {
-                Graph.OnboardingGraph
+                Graph.SyncGraph
             }
             splashCondition = false
         }.launchIn(viewModelScope)

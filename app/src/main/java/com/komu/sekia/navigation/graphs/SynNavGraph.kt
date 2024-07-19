@@ -4,17 +4,17 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.komu.presentation.onboarding.OnboardingScreen
+import com.komu.presentation.sync.SyncScreen
 import com.komu.sekia.navigation.Graph
-import com.komu.sekia.navigation.OnboardingRoute
+import com.komu.sekia.navigation.SyncRoute
 
 fun NavGraphBuilder.onboardingNavGraph(rootNavHostController: NavHostController) {
     navigation(
-        route = Graph.OnboardingGraph,
-        startDestination = OnboardingRoute.OnboardingScreen.route
+        route = Graph.SyncGraph,
+        startDestination = SyncRoute.SyncScreen.route
     ) {
-        composable(route = OnboardingRoute.OnboardingScreen.route) {
-            OnboardingScreen()
+        composable(route = SyncRoute.SyncScreen.route) {
+            SyncScreen()
         }
     }
 }

@@ -6,7 +6,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.komu.presentation.MainScreen
 import com.komu.sekia.navigation.Graph
-import com.komu.sekia.navigation.Graph.OnboardingGraph
 
 @Composable
 fun RootNavGraph(startDestination: String) {

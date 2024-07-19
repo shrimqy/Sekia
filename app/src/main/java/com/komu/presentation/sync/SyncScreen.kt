@@ -1,50 +1,55 @@
-package com.komu.presentation.onboarding
+package com.komu.presentation.sync
 
 import android.net.nsd.NsdServiceInfo
 import android.util.Log
-import androidx.activity.viewModels
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.komu.sekia.MainViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
+import komu.seki.presentation.screens.EmptyScreen
 
 @Composable
-fun OnboardingScreen(modifier: Modifier = Modifier) {
-    val viewModel: OnboardingViewModel = hiltViewModel()
+fun SyncScreen(modifier: Modifier = Modifier) {
+    val viewModel: SyncViewModel = hiltViewModel()
     val services by viewModel.services.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
     val selectedService = remember { mutableStateOf<NsdServiceInfo?>(null) }
-    Log.d("NsdService","$services")
-    Column(modifier = modifier) {
-        LazyColumn {
-            items(services) { service->
-                Log.d("Service", "Connect button clicked, service: $services")
-                TextButton(onClick = {
-                    Log.d("Service", "Connect button clicked, service: $services")
-                    selectedService.value = service
-                    showDialog.value = true
-                }) {
-                    Text(text = "Connect to ${service.serviceName}")
+    
+    Box(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.background)
+            .fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (services.isEmpty()) {
+                EmptyScreen(message = "No service found")
+            } else {
+                LazyColumn {
+                    items(services) { service ->
+                        TextButton(onClick = {
+                            selectedService.value = service
+                            showDialog.value = true
+                        }) {
+                            Text(text = "Connect to ${service.serviceName}")
+                        }
+                    }
                 }
-            }
-        }
-        LaunchedEffect(services) {
-            if (services.isNotEmpty()) {
-                Log.d("NsdService", "Services discovered: ${services.map { it.serviceName }}")
             }
         }
     }
