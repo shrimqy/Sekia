@@ -16,6 +16,8 @@ datastore = "1.1.1"
 hilt = "2.51.1"
 hilt-androidx = "1.2.0"
 
+ktorVersion = "2.3.12"
+
 composeBom = "2024.06.00"
 compose-coil = "2.6.0"
 compose-activity = "1.9.0"
@@ -53,7 +55,6 @@ compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeB
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose-ui" }
 foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose-ui" }
 
-compose-material = { module = "androidx.compose.material:material", version.ref = "compose-ui"}
 animation = { module = "androidx.compose.animation:animation", version.ref = "compose-ui"}
 animation-graphics = { module = "androidx.compose.animation:animation-graphics", version.ref = "compose-ui" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose-ui" }
@@ -65,6 +66,13 @@ compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", ve
 
 material3-core = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 material-icons = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose-ui" }
+
+# Ktor
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorVersion" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorVersion" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorVersion" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorVersion" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorVersion" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -90,5 +98,10 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 [bundles]
 compose-android = [
     "activity-compose", "foundation", "animation", "animation-graphics", "compose-ui",
-    "material3-core", "material-icons",  "ui-tooling-preview", "compose-material"
+    "material3-core", "material-icons",  "ui-tooling-preview"
+]
+
+ktor = [
+    "ktor-client-core", "ktor-client-okhttp", "ktor-client-logging",
+    "ktor-client-content-negotiation", "ktor-serialization-kotlinx-json"
 ]

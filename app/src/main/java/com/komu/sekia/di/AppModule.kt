@@ -8,7 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import komu.seki.data.repository.PreferencesDatastore
-import komu.seki.data.services.NsdService
+import komu.seki.network.services.NsdService
 import komu.seki.domain.PreferencesRepository
 import javax.inject.Singleton
 
@@ -29,5 +29,6 @@ object AppModule {
     @Singleton
     fun providesNsdHelper(
         application: Application
-    ): NsdService = NsdService(context = application)
+    ): NsdService =
+        NsdService(context = application)
 }

@@ -57,6 +57,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
     implementation(project(":core:presentation"))
+    implementation(project(":core:network"))
 
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
@@ -65,6 +66,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.compose.navigation)
     implementation(libs.splashscreen)
+
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)

@@ -24,9 +24,9 @@ class MainViewModel @Inject constructor(
         private set
     init {
         Log.d("MainViewModel", "ViewModel initialized")
-        preferencesRepository.readOnboardingStatus().onEach { onboardingComplete ->
-            Log.d("MainViewModel", "Onboarding status: $onboardingComplete")
-            startDestination = if (onboardingComplete) {
+        preferencesRepository.readSyncStatus().onEach { onSyncComplete ->
+            Log.d("MainViewModel", "Onboarding status: $onSyncComplete")
+            startDestination = if (onSyncComplete) {
                 Graph.MainScreenGraph
             } else  {
                 Graph.SyncGraph

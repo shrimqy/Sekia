@@ -3,6 +3,14 @@ package komu.seki.domain
 import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {
-    suspend fun saveOnboardingStatus()
-    fun readOnboardingStatus(): Flow<Boolean>
+    suspend fun saveSyncStatus()
+    fun readSyncStatus(): Flow<Boolean>
+    suspend fun saveServiceDetails(serviceName: String, hostAddress: String, port: Int)
+    fun readServiceDetails(): Flow<ServiceDetails>
 }
+
+data class ServiceDetails(
+    val serviceName: String,
+    val hostAddress: String,
+    val port: Int
+)
