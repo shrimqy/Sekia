@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -38,7 +39,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
 
-
+    implementation(libs.bundles.ktor)
     implementation(libs.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)

@@ -57,7 +57,6 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
     implementation(project(":core:presentation"))
-    implementation(project(":core:network"))
 
     implementation(libs.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)

@@ -87,7 +87,7 @@ fun SyncScreen(
                 Button(
                     onClick = {
                         Log.d("Service", "Connecting to service: ${selectedService.value}")
-                        viewModel.connectToService(selectedService.value!!)
+                        viewModel.saveDevice(selectedService.value!!)
                         showDialog.value = false
                     }
                 ) {

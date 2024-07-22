@@ -9,7 +9,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import komu.seki.network.services.NsdService
+import komu.seki.data.network.services.KtorWebSocketService
+import komu.seki.data.network.services.Message
+import komu.seki.data.network.services.MessageType
+import komu.seki.data.network.services.NsdService
 import komu.seki.domain.PreferencesRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,71 +24,58 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class SyncViewModel @Inject constructor(
-    private val preferencesRepository: PreferencesRepository,
-    private val nsdService: NsdService
+    private val webSocketService: KtorWebSocketService,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
-    val services: StateFlow<List<NsdServiceInfo>> = nsdService.services
+    private val _messages = MutableStateFlow<List<Message>>(emptyList())
+    val messages: StateFlow<List<Message>> get() = _messages
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean> = _isRefreshing
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> get() = _isConnected
 
-    init {
-        viewModelScope.launch {
-            nsdService.startDiscovery()
-            delay(1.seconds)
-            stopDiscovery()
-        }
-    }
-
-    fun connectToService(serviceInfo: NsdServiceInfo) {
+    fun connect(hostAddress: String, port: Int) {
         viewModelScope.launch {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    val hostAddress = serviceInfo.hostAddresses.first().hostAddress
-                    preferencesRepository.saveServiceDetails(
-                        serviceName = serviceInfo.serviceName,
-                        hostAddress = hostAddress!!,
-                        port = serviceInfo.port
-                    )
-                    Log.d(TAG, "Service details saved: ${serviceInfo.serviceName}, ${hostAddress}, ${serviceInfo.port}")
-                } else {
-                    preferencesRepository.saveServiceDetails(
-                        serviceName = serviceInfo.serviceName,
-                        hostAddress = serviceInfo.host.hostAddress!!,
-                        port = serviceInfo.port
-                    )
+                webSocketService.connect(hostAddress, port)
+                _isConnected.value = true
+                webSocketService.receiveMessages().collect { message ->
+                    handleIncomingMessage(message)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error saving to service: ${e.message}", e)
+                Log.e("SyncViewModel", "Error connecting to WebSocket: ${e.message}", e)
+                _isConnected.value = false
             }
         }
     }
 
-    fun findServices() {
+    fun sendMessage(type: String, content: String) {
         viewModelScope.launch {
-            _isRefreshing.value = true
-            nsdService.startDiscovery()
-            // Fake slower refresh so it doesn't seem like it's not doing anything
-            delay(1.seconds)
-            stopDiscovery()
-            _isRefreshing.value = false
+            val message = Message(type, content)
+            webSocketService.sendMessage(message)
         }
     }
 
-    private fun stopDiscovery() {
-        nsdService.stopDiscovery()
+    fun disconnect() {
+        viewModelScope.launch {
+            webSocketService.disconnect()
+            _isConnected.value = false
+        }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.d(TAG, "ViewModel cleared, stopping discovery")
-        stopDiscovery()
-        nsdService.releaseMulticastLock()
-    }
-
-    companion object {
-        private const val TAG = "OnboardingViewModel"
-        private const val PORT = 5
+    private fun handleIncomingMessage(message: Message) {
+        // Handle incoming messages and update UI
+        when (message.type) {
+            MessageType.Clipboard -> {
+                // Handle Clipboard message
+            }
+            MessageType.Response -> {
+                // Handle Response message
+            }
+            else -> {
+                // Handle Error or unknown message types
+            }
+        }
+        _messages.value += message
     }
 }

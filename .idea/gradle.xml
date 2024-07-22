@@ -26,7 +26,6 @@
             <option value="$PROJECT_DIR$/core/common" />
             <option value="$PROJECT_DIR$/core/data" />
             <option value="$PROJECT_DIR$/core/domain" />
-            <option value="$PROJECT_DIR$/core/network" />
             <option value="$PROJECT_DIR$/core/presentation" />
           </set>
         </option>
