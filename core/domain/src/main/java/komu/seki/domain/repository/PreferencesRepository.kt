@@ -1,4 +1,4 @@
-package komu.seki.domain
+package komu.seki.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 

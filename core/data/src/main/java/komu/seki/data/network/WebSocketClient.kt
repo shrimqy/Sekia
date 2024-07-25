@@ -1,21 +1,26 @@
-package komu.seki.data.network.services
+package komu.seki.data.network
 
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.channels.consumeEach
+import komu.seki.domain.models.SocketMessage
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class KtorWebSocketService {
+class WebSocketClient {
     private val client = HttpClient {
         install(WebSockets)
     }
 
     private var session: WebSocketSession? = null
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     suspend fun connect(hostAddress: String, port: Int) {
         session = client.webSocketSession {
@@ -23,14 +28,16 @@ class KtorWebSocketService {
         }
     }
 
-    suspend fun sendMessage(message: Message) {
-        session?.send(Frame.Text(Json.encodeToString(message)))
+    suspend fun sendMessage(message: SocketMessage) {
+        val jsonString = json.encodeToString(message)
+        session?.send(Frame.Text(jsonString))
     }
 
-    fun receiveMessages(): Flow<Message> = flow {
-        session?.incoming?.consumeEach { frame ->
+    fun receiveMessages(): Flow<SocketMessage> = flow {
+        session?.incoming?.consumeAsFlow()?.collect { frame ->
             if (frame is Frame.Text) {
-                val message = Json.decodeFromString<Message>(frame.readText())
+                val jsonString = frame.readText()
+                val message = json.decodeFromString<SocketMessage>(jsonString)
                 emit(message)
             }
         }
@@ -40,17 +47,4 @@ class KtorWebSocketService {
         session?.close()
         client.close()
     }
-}
-
-@kotlinx.serialization.Serializable
-data class Message(
-    val type: String,
-    val content: String
-)
-
-object MessageType {
-    const val Error = "error"
-    const val Link = "link"
-    const val Clipboard = "clipboard"
-    const val Response = "response"
 }
