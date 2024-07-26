@@ -36,7 +36,6 @@ android {
 dependencies {
 
     implementation(project(":core:common"))
-    implementation(project(":core:data"))
 
     implementation(libs.bundles.ktor)
     implementation(libs.core.ktx)

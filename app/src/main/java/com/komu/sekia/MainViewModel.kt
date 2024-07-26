@@ -15,15 +15,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    preferencesRepository: PreferencesRepository
+    preferencesRepository: PreferencesRepository,
 ): ViewModel() {
     var splashCondition by mutableStateOf(true)
         private set
 
     var startDestination by mutableStateOf(Graph.MainScreenGraph)
         private set
+
     init {
         Log.d("MainViewModel", "ViewModel initialized")
+
         preferencesRepository.readSyncStatus().onEach { onSyncComplete ->
             Log.d("MainViewModel", "Onboarding status: $onSyncComplete")
             startDestination = if (onSyncComplete) {

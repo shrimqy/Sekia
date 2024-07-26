@@ -44,53 +44,6 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    fun connect(hostAddress: String, port: Int) {
-        viewModelScope.launch {
-            try {
-                webWebSocketClient.connect(hostAddress, port)
-                _isConnected.value = true
-                webWebSocketClient.receiveMessages().collect { message ->
-                    handleIncomingMessage(message)
-                }
-            } catch (e: Exception) {
-                Log.e("SyncViewModel", "Error connecting to WebSocket: ${e.message}", e)
-                _isConnected.value = false
-            }
-        }
-    }
-
-    fun disconnect() {
-        viewModelScope.launch {
-            webWebSocketClient.disconnect()
-            _isConnected.value = false
-        }
-    }
-
-    fun sendMessage(message: SocketMessage) {
-        viewModelScope.launch {
-            webWebSocketClient.sendMessage(message)
-        }
-    }
-
-    private fun handleIncomingMessage(message: SocketMessage) {
-        // Handle incoming messages and update UI
-        when (message) {
-            is Response -> {
-                // Handle Clipboard message
-            }
-            is NotificationMessage -> {
-                // Handle Response message
-            }
-            is ClipboardMessage -> {
-                // Handle Clipboard message
-            }
-            else -> {
-                // Handle Error or unknown message types
-            }
-        }
-        _messages.update { it + message }
-    }
-
     // Capture the stateflow from the service as the data updates
     val services: StateFlow<List<NsdServiceInfo>> = nsdService.services
 
@@ -102,19 +55,20 @@ class SyncViewModel @Inject constructor(
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     val hostAddress = serviceInfo.hostAddresses.first().hostAddress
-                    preferencesRepository.saveServiceDetails(
+                    preferencesRepository.saveDeviceDetails(
                         serviceName = serviceInfo.serviceName,
                         hostAddress = hostAddress!!,
                         port = PORT
                     )
                     Log.d(TAG, "Service details saved: ${serviceInfo.serviceName}, ${hostAddress}, ${serviceInfo.port}")
                 } else {
-                    preferencesRepository.saveServiceDetails(
+                    preferencesRepository.saveDeviceDetails(
                         serviceName = serviceInfo.serviceName,
                         hostAddress = serviceInfo.host.hostAddress!!,
                         port = PORT
                     )
                 }
+                preferencesRepository.saveSyncStatus()
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving to service: ${e.message}", e)
             }

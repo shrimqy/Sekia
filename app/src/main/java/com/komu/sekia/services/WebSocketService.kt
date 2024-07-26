@@ -21,13 +21,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class WebSocketService : Service() {
+    @Inject
+    lateinit var webSocketRepository: WebSocketRepository
 
-    private val binder = LocalBinder()
-    private lateinit var webSocketRepository: WebSocketRepository
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val binder = LocalBinder()
 
     inner class LocalBinder : Binder() {
         fun getService(): WebSocketService = this@WebSocketService
@@ -82,7 +84,7 @@ class WebSocketService : Service() {
         manager.createNotificationChannel(channel)
 
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("WebSocket Active")
+            .setContentTitle("Device Connected")
             .setContentText("Maintaining connection in background")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()

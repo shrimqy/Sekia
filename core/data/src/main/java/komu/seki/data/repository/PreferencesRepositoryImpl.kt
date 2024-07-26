@@ -10,7 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import komu.seki.domain.repository.PreferencesRepository
-import komu.seki.domain.repository.ServiceDetails
+import komu.seki.domain.repository.DeviceDetails
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -24,7 +24,7 @@ class PreferencesDatastore @Inject constructor(
 
     private object DataPreferencesKeys{
         val SYNC_STATUS = booleanPreferencesKey("syncStatus")
-        val SERVICE_NAME = stringPreferencesKey("serviceName")
+        val DEVICE_NAME = stringPreferencesKey("serviceName")
         val HOST_ADDRESS = stringPreferencesKey("hostAddress")
         val PORT = intPreferencesKey("port")
     }
@@ -42,20 +42,20 @@ class PreferencesDatastore @Inject constructor(
         }
     }
 
-    override suspend fun saveServiceDetails(serviceName: String, hostAddress: String, port: Int) {
+    override suspend fun saveDeviceDetails(serviceName: String, hostAddress: String, port: Int) {
         datastore.edit { settings ->
-            settings[DataPreferencesKeys.SERVICE_NAME] = serviceName
+            settings[DataPreferencesKeys.DEVICE_NAME] = serviceName
             settings[DataPreferencesKeys.HOST_ADDRESS] = hostAddress
             settings[DataPreferencesKeys.PORT] = port
         }
     }
 
-    override fun readServiceDetails(): Flow<ServiceDetails> {
+    override fun readDeviceDetails(): Flow<DeviceDetails> {
         return datastore.data.map { preferences ->
-            val serviceName = preferences[DataPreferencesKeys.SERVICE_NAME] ?: ""
+            val deviceName = preferences[DataPreferencesKeys.DEVICE_NAME] ?: ""
             val host = preferences[DataPreferencesKeys.HOST_ADDRESS] ?: ""
             val port = preferences[DataPreferencesKeys.PORT] ?: 0
-            ServiceDetails(serviceName, host, port)
+            DeviceDetails(deviceName, host, port)
         }
     }
 }
