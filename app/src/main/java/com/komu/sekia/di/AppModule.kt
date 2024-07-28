@@ -11,6 +11,7 @@ import komu.seki.data.repository.PreferencesDatastore
 import komu.seki.data.network.NsdService
 import komu.seki.data.network.WebSocketClient
 import komu.seki.data.repository.WebSocketRepositoryImpl
+import komu.seki.domain.MessageHandler
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import javax.inject.Singleton
@@ -29,7 +30,14 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providesWebSocketClient(): WebSocketClient = WebSocketClient()
+    fun providesMessageHandler(
+        application: Application
+    ): MessageHandler = MessageHandler(context = application)
+
+    @Provides
+    @Singleton
+    fun providesWebSocketClient(messageHandler: MessageHandler): WebSocketClient = WebSocketClient(messageHandler)
+
 
     @Provides
     @Singleton

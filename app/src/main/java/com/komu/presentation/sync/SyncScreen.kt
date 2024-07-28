@@ -1,7 +1,11 @@
 package com.komu.presentation.sync
 
+import android.Manifest
 import android.net.nsd.NsdServiceInfo
+import android.os.Build
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.komu.presentation.sync.components.DeviceItem
 import komu.seki.presentation.components.PullRefresh
@@ -40,6 +45,11 @@ fun SyncScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
     val selectedService = remember { mutableStateOf<NsdServiceInfo?>(null) }
+
+    val notificationPermissionResultLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = {}
+    )
 
     PullRefresh(
         refreshing = isRefreshing,
@@ -86,6 +96,11 @@ fun SyncScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionResultLauncher.launch(
+                                Manifest.permission.POST_NOTIFICATIONS
+                            )
+                        }
                         Log.d("Service", "Connecting to service: ${selectedService.value}")
                         viewModel.saveDevice(selectedService.value!!)
                         showDialog.value = false

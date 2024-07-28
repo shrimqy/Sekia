@@ -1,27 +1,22 @@
 package com.komu.presentation.home
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.komu.sekia.services.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import komu.seki.domain.models.ClipboardMessage
-import komu.seki.domain.models.NotificationMessage
-import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.DeviceDetails
 import komu.seki.domain.repository.PreferencesRepository
-import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
@@ -59,11 +54,9 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            preferencesRepository.readDeviceDetails().collect {
+            preferencesRepository.readDeviceDetails().collectLatest {
                 _deviceDetails.value = it
-                if (it != null) {
-                    bindWebSocketService()
-                }
+                bindWebSocketService()
             }
         }
     }
@@ -77,9 +70,7 @@ class HomeViewModel @Inject constructor(
         val hostAddress = deviceDetails.value?.hostAddress
         val port = deviceDetails.value?.port
         if (hostAddress != null && port != null) {
-            webSocketService?.get()?.connect(hostAddress, port) { message ->
-                handleIncomingMessage(message)
-            }
+            webSocketService?.get()?.connect(hostAddress, port)
         }
     }
 
@@ -99,8 +90,8 @@ class HomeViewModel @Inject constructor(
 
     private fun handleIncomingMessage(message: SocketMessage) {
         // Handle incoming messages...
-        _messages.update { it + message }
     }
+
 
     override fun onCleared() {
         super.onCleared()

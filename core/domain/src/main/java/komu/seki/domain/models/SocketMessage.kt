@@ -1,47 +1,47 @@
 package komu.seki.domain.models
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.Json.Default.serializersModule
+import kotlinx.serialization.json.JsonClassDiscriminator
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
 
 
+@Serializable
 enum class SocketMessageType {
-    Clipboard,
-    Notification,
-    Response,
-    Permission,
-    Media,
-    Link,
-    Message
+    @SerialName("0") Clipboard,
+    @SerialName("1") Notification,
+    @SerialName("2") Response,
 }
 
-@Serializable
-abstract class SocketMessage {
-    abstract val type: SocketMessageType
-}
 
 @Serializable
-@SerialName("Response")
+sealed class SocketMessage
+
+@Serializable
+@SerialName("0")
 data class Response(
     val resType: String,
     val content: String,
-    override val type: SocketMessageType = SocketMessageType.Response
 ) : SocketMessage()
 
 @Serializable
-@SerialName("ClipboardMessage")
+@SerialName("1")
 data class ClipboardMessage(
     val content: String,
-    override val type: SocketMessageType = SocketMessageType.Clipboard
 ) : SocketMessage()
 
 @Serializable
-@SerialName("NotificationMessage")
+@SerialName("2")
 data class NotificationMessage(
     val appName: String,
     val header: String,
     val content: String,
     val actions: List<NotificationAction>,
-    override val type: SocketMessageType = SocketMessageType.Notification
 ) : SocketMessage()
 
 @Serializable

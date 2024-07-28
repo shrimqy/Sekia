@@ -7,5 +7,4 @@ interface WebSocketRepository {
     suspend fun connect(hostAddress: String, port: Int)
     suspend fun disconnect()
     suspend fun sendMessage(message: SocketMessage)
-    fun receiveMessages(): Flow<SocketMessage>
 }

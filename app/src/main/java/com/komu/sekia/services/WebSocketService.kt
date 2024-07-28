@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
@@ -39,37 +40,21 @@ class WebSocketService : Service() {
         return binder
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        webSocketRepository = WebSocketRepositoryImpl(WebSocketClient())
-    }
-
-    fun connect(hostAddress: String, port: Int, onMessageReceived: (SocketMessage) -> Unit) {
+    fun connect(hostAddress: String, port: Int) {
         scope.launch {
-            try {
-                webSocketRepository.connect(hostAddress, port)
-                startForeground(NOTIFICATION_ID, createNotification(), foregroundServiceType)
-                webSocketRepository.receiveMessages().collect { message ->
-                    onMessageReceived(message)
-                }
-            } catch (e: Exception) {
-                Log.e("WebSocketService", "Error connecting to WebSocket: ${e.message}", e)
-                stopSelf()
-            }
-        }
-    }
-
-    fun sendMessage(message: SocketMessage) {
-        scope.launch {
-            webSocketRepository.sendMessage(message)
+            webSocketRepository.connect(hostAddress, port)
         }
     }
 
     fun disconnect() {
         scope.launch {
             webSocketRepository.disconnect()
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+        }
+    }
+
+    fun sendMessage(message: SocketMessage) {
+        scope.launch {
+            webSocketRepository.sendMessage(message)
         }
     }
 
