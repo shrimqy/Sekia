@@ -21,8 +21,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNamingStrategy
-import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
@@ -50,16 +48,24 @@ class WebSocketClient(
     private var session: WebSocketSession? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    suspend fun connect(hostAddress: String, port: Int){
-        try {
-            session = client.webSocketSession {
-                url("ws://192.168.1.9:$port/SekiService")
+    suspend fun connect(hostAddresses: String, port: Int) {
+        val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")
+        // Find all valid IP addresses in the string
+        val hosts = ipRegex.findAll(hostAddresses).map { it.value }.toList()
+        for (host in hosts) {
+            try {
+                session = client.webSocketSession {
+                    url("ws://$host:$port/SekiService")
+                }
+                Log.d("socket", "Client Connected to $host")
+                startListening()
+                return  // Exit the function if connection is successful
+            } catch (e: Exception) {
+                Log.d("connectionError", "Failed to connect to $host")
+                e.printStackTrace()
             }
-            Log.d("socket", "Client Connected")
-            startListening()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
+        Log.d("connectionError", "Failed to connect to any host")
     }
 
 

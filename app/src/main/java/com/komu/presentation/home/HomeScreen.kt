@@ -31,7 +31,6 @@ fun HomeScreen(
     val viewModel: HomeViewModel = hiltViewModel()
     val deviceDetails by viewModel.deviceDetails.collectAsState()
     val isConnected by viewModel.isConnected.collectAsState()
-    val messages by viewModel.messages.collectAsState()
 
     Column(modifier = modifier
         .fillMaxSize()
@@ -51,10 +50,5 @@ fun HomeScreen(
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text("Messages:")
-        LazyColumn {
-            items(messages) { message ->
-                Text(text = message.toString())
-            }
-        }
     }
 }

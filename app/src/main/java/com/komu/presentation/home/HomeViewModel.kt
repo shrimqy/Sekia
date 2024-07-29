@@ -1,5 +1,6 @@
 package com.komu.presentation.home
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
@@ -17,9 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
 import javax.inject.Inject
 
 @HiltViewModel
@@ -34,14 +33,12 @@ class HomeViewModel @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    private val _messages = MutableStateFlow<List<SocketMessage>>(emptyList())
-    val messages: StateFlow<List<SocketMessage>> = _messages.asStateFlow()
-
-    private var webSocketService: WeakReference<WebSocketService>? = null
+    @SuppressLint("StaticFieldLeak")
+    private var webSocketService: WebSocketService? = null
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as WebSocketService.LocalBinder
-            webSocketService = WeakReference(binder.getService())
+            webSocketService = binder.getService()
             _isConnected.value = true
             connectToWebSocket()
         }
@@ -54,9 +51,10 @@ class HomeViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            bindWebSocketService()
             preferencesRepository.readDeviceDetails().collectLatest {
                 _deviceDetails.value = it
-                bindWebSocketService()
+                connectToWebSocket()
             }
         }
     }
@@ -70,16 +68,16 @@ class HomeViewModel @Inject constructor(
         val hostAddress = deviceDetails.value?.hostAddress
         val port = deviceDetails.value?.port
         if (hostAddress != null && port != null) {
-            webSocketService?.get()?.connect(hostAddress, port)
+            webSocketService?.connect(hostAddress, port)
         }
     }
 
     fun sendMessage(message: SocketMessage) {
-        webSocketService?.get()?.sendMessage(message)
+        webSocketService?.sendMessage(message)
     }
 
     fun disconnect() {
-        webSocketService?.get()?.disconnect()
+        webSocketService?.disconnect()
         try {
             getApplication<Application>().unbindService(serviceConnection)
         } catch (e: IllegalArgumentException) {

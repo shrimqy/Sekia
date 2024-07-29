@@ -54,10 +54,10 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    val hostAddress = serviceInfo.hostAddresses.first().hostAddress
+                    val hostAddress = serviceInfo.hostAddresses.toString()
                     preferencesRepository.saveDeviceDetails(
                         serviceName = serviceInfo.serviceName,
-                        hostAddress = hostAddress!!,
+                        hostAddress = hostAddress,
                         port = PORT
                     )
                     Log.d(TAG, "Service details saved: ${serviceInfo.serviceName}, ${hostAddress}, ${serviceInfo.port}")
@@ -90,12 +90,6 @@ class SyncViewModel @Inject constructor(
         nsdService.stopDiscovery()
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        Log.d(TAG, "ViewModel cleared, stopping discovery")
-        stopDiscovery()
-        nsdService.releaseMulticastLock()
-    }
 
     companion object {
         private const val TAG = "OnboardingViewModel"
