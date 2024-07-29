@@ -1,5 +1,6 @@
 package com.komu.sekia.services
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,10 +8,12 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.Uri
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.komu.sekia.R
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.data.network.WebSocketClient
@@ -19,15 +22,22 @@ import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.reflect.KProperty
 
 @AndroidEntryPoint
 class WebSocketService : Service() {
     @Inject
     lateinit var webSocketRepository: WebSocketRepository
+
+    companion object {
+        private const val NOTIFICATION_ID = 1
+    }
+    private var job: Job? = null
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val binder = LocalBinder()
@@ -39,6 +49,12 @@ class WebSocketService : Service() {
     override fun onBind(intent: Intent): IBinder {
         return binder
     }
+
+//    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+//        job = CoroutineScope(Dispatchers.IO).launch {  }
+//
+//        return super.onStartCommand(intent, flags, startId)
+//    }
 
     fun connect(hostAddress: String, port: Int) {
         scope.launch {
@@ -56,6 +72,11 @@ class WebSocketService : Service() {
         scope.launch {
             webSocketRepository.sendMessage(message)
         }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        startForeground(NOTIFICATION_ID, createNotification())
     }
 
     private fun createNotification(): Notification {
@@ -79,8 +100,6 @@ class WebSocketService : Service() {
         super.onDestroy()
         scope.cancel()
     }
-
-    companion object {
-        private const val NOTIFICATION_ID = 1
-    }
 }
+
+
