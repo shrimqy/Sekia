@@ -8,8 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,33 +17,36 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.komu.presentation.sync.components.DeviceItem
 import komu.seki.presentation.components.PullRefresh
 import komu.seki.presentation.screens.EmptyScreen
 import komu.seki.presentation.screens.LoadingScreen
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SyncScreen(
     modifier: Modifier = Modifier,
+    rootNavController: NavHostController,
 ) {
+    val scope = rememberCoroutineScope()
+
     val viewModel: SyncViewModel = hiltViewModel()
     val services by viewModel.services.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val showDialog = remember { mutableStateOf(false) }
     val selectedService = remember { mutableStateOf<NsdServiceInfo?>(null) }
-
     val notificationPermissionResultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = {}
@@ -89,6 +90,7 @@ fun SyncScreen(
 
 
     if (showDialog.value && selectedService.value != null) {
+
         AlertDialog(
             onDismissRequest = { showDialog.value = false },
             title = { Text("Connect") },
@@ -96,10 +98,12 @@ fun SyncScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            notificationPermissionResultLauncher.launch(
-                                Manifest.permission.POST_NOTIFICATIONS
-                            )
+                        scope.launch {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionResultLauncher.launch(
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            }
                         }
                         Log.d("Service", "Connecting to service: ${selectedService.value}")
                         viewModel.saveDevice(selectedService.value!!)

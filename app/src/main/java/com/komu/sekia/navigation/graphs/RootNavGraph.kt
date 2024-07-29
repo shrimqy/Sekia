@@ -5,6 +5,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.komu.presentation.MainScreen
+import com.komu.presentation.sync.SyncScreen
 import com.komu.sekia.navigation.Graph
 
 @Composable
@@ -15,7 +16,9 @@ fun RootNavGraph(startDestination: String) {
         navController = rootNavController,
         startDestination = startDestination
     ) {
-        onboardingNavGraph(rootNavController)
+        composable(route = Graph.SyncGraph) {
+            SyncScreen(rootNavController = rootNavController)
+        }
         composable(route = Graph.MainScreenGraph) {
             MainScreen(rootNavController = rootNavController)
         }

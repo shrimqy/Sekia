@@ -1,4 +1,4 @@
-package com.komu.sekia.navigation
+    package com.komu.sekia.navigation
 
 object Graph {
     const val RootGraph = "rootGraph"
