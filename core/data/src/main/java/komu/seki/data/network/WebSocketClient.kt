@@ -48,12 +48,13 @@ class WebSocketClient(
     private var session: WebSocketSession? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    suspend fun connect(hostAddresses: String, port: Int): Boolean {
+    suspend fun connect(hostAddresses: String): Boolean {
         val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")
         // Find all valid IP addresses in the string
         val hosts = ipRegex.findAll(hostAddresses).map { it.value }.toList()
         for (host in hosts) {
             try {
+                val port = 5149
                 session = client.webSocketSession {
                     url("ws://$host:$port")
                 }

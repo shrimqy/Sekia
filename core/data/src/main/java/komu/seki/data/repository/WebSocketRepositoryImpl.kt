@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.Flow
 class WebSocketRepositoryImpl(
     private val webSocketClient: WebSocketClient,
 ) : WebSocketRepository {
-    override suspend fun connect(hostAddress: String, port: Int): Boolean {
-        return webSocketClient.connect(hostAddress, port)
+    override suspend fun connect(hostAddress: String): Boolean {
+        return webSocketClient.connect(hostAddress)
     }
 
     override suspend fun startListening() {

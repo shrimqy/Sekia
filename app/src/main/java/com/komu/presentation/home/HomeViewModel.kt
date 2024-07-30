@@ -57,7 +57,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         appScope.launch {
-            preferencesRepository.readDeviceDetails().collectLatest {
+            preferencesRepository.readDeviceDetails()?.collectLatest {
                 _deviceDetails.value = it
                 connectToWebSocket()
             }
@@ -71,11 +71,10 @@ class HomeViewModel @Inject constructor(
 
     fun connectToWebSocket() {
         val hostAddress = deviceDetails.value!!.hostAddress
-        val port = deviceDetails.value!!.port
         appScope.launch {
             try {
                 bindWebSocketService()
-                _isConnected.value = webSocketService?.connect(hostAddress, port) ?: false
+                _isConnected.value = hostAddress?.let { webSocketService?.connect(it) } ?: false
                 if (isConnected.value) {
                     webSocketService?.startListening()
                 }

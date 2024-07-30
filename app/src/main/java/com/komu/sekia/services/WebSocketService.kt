@@ -50,8 +50,8 @@ class WebSocketService : Service() {
         return binder
     }
 
-    suspend fun connect(hostAddress: String, port: Int): Boolean {
-        return webSocketRepository.connect(hostAddress, port)
+    suspend fun connect(hostAddress: String): Boolean {
+        return webSocketRepository.connect(hostAddress)
     }
 
     suspend fun startListening() {

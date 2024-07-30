@@ -56,19 +56,16 @@ class SyncViewModel @Inject constructor(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     val hostAddress = serviceInfo.hostAddresses.toString()
                     preferencesRepository.saveDeviceDetails(
-                        serviceName = serviceInfo.serviceName,
+                        deviceName = serviceInfo.serviceName,
                         hostAddress = hostAddress,
-                        port = PORT
                     )
                     Log.d(TAG, "Service details saved: ${serviceInfo.serviceName}, ${hostAddress}, ${serviceInfo.port}")
                 } else {
                     preferencesRepository.saveDeviceDetails(
-                        serviceName = serviceInfo.serviceName,
+                        deviceName = serviceInfo.serviceName,
                         hostAddress = serviceInfo.host.hostAddress!!,
-                        port = PORT
                     )
                 }
-                preferencesRepository.saveSyncStatus()
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving to service: ${e.message}", e)
             }
