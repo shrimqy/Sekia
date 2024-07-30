@@ -1,5 +1,6 @@
 package komu.seki.domain.repository
 
+import komu.seki.domain.models.DeviceDetails
 import kotlinx.coroutines.flow.Flow
 
 interface PreferencesRepository {
@@ -9,8 +10,3 @@ interface PreferencesRepository {
     fun readDeviceDetails(): Flow<DeviceDetails>
 }
 
-data class DeviceDetails(
-    val deviceName: String,
-    val hostAddress: String,
-    val port: Int
-)

@@ -39,9 +39,16 @@ fun HomeScreen(
             text = if (isConnected) "Connected to the device" else "Not connected",
             style = MaterialTheme.typography.bodyMedium
         )
-        TextButton(onClick = { viewModel.disconnect() }) {
-            Text(text = "Disconnect")
+        if (isConnected) {
+            TextButton(onClick = { viewModel.disconnect() }) {
+                Text(text = "Disconnect")
+            }
+        } else {
+            TextButton(onClick = { viewModel.connectToWebSocket() }) {
+                Text(text = "Connect")
+            }
         }
+
         Spacer(modifier = Modifier.height(8.dp))
         deviceDetails?.let {
             Text(text = "Device Name: ${it.deviceName}")

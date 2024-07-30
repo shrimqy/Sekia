@@ -50,28 +50,20 @@ class WebSocketService : Service() {
         return binder
     }
 
-//    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-//        job = CoroutineScope(Dispatchers.IO).launch {  }
-//
-//        return super.onStartCommand(intent, flags, startId)
-//    }
-
-    fun connect(hostAddress: String, port: Int) {
-        scope.launch {
-            webSocketRepository.connect(hostAddress, port)
-        }
+    suspend fun connect(hostAddress: String, port: Int): Boolean {
+        return webSocketRepository.connect(hostAddress, port)
     }
 
-    fun disconnect() {
-        scope.launch {
-            webSocketRepository.disconnect()
-        }
+    suspend fun startListening() {
+        webSocketRepository.startListening()
     }
 
-    fun sendMessage(message: SocketMessage) {
-        scope.launch {
-            webSocketRepository.sendMessage(message)
-        }
+    suspend fun disconnect() {
+        webSocketRepository.disconnect()
+    }
+
+    suspend fun sendMessage(message: SocketMessage) {
+        webSocketRepository.sendMessage(message)
     }
 
     override fun onCreate() {

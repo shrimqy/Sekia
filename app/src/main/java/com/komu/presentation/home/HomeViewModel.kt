@@ -7,12 +7,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.komu.sekia.di.AppCoroutineScope
 import com.komu.sekia.services.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import komu.seki.domain.models.DeviceDetails
 import komu.seki.domain.models.SocketMessage
-import komu.seki.domain.repository.DeviceDetails
 import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,11 +26,15 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     preferencesRepository: PreferencesRepository,
+    private val appScope: AppCoroutineScope,
     application: Application
 ) : AndroidViewModel(application) {
 
     private val _deviceDetails = MutableStateFlow<DeviceDetails?>(null)
     val deviceDetails: StateFlow<DeviceDetails?> = _deviceDetails.asStateFlow()
+
+    private val _connectedDevice = MutableStateFlow<DeviceDetails?>(null)
+    val connectedDevice: StateFlow<DeviceDetails?> = _connectedDevice.asStateFlow()
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
@@ -50,8 +56,7 @@ class HomeViewModel @Inject constructor(
     }
 
     init {
-        viewModelScope.launch {
-            bindWebSocketService()
+        appScope.launch {
             preferencesRepository.readDeviceDetails().collectLatest {
                 _deviceDetails.value = it
                 connectToWebSocket()
@@ -64,35 +69,40 @@ class HomeViewModel @Inject constructor(
         getApplication<Application>().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
-    private fun connectToWebSocket() {
-        val hostAddress = deviceDetails.value?.hostAddress
-        val port = deviceDetails.value?.port
-        if (hostAddress != null && port != null) {
-            webSocketService?.connect(hostAddress, port)
+    fun connectToWebSocket() {
+        val hostAddress = deviceDetails.value!!.hostAddress
+        val port = deviceDetails.value!!.port
+        appScope.launch {
+            try {
+                bindWebSocketService()
+                _isConnected.value = webSocketService?.connect(hostAddress, port) ?: false
+                if (isConnected.value) {
+                    webSocketService?.startListening()
+                }
+            } catch (e: IllegalArgumentException) {
+                // Handle the exception gracefully, e.g., log the error or notify the user
+            }
         }
     }
 
-    fun sendMessage(message: SocketMessage) {
+    suspend fun sendMessage(message: SocketMessage) {
         webSocketService?.sendMessage(message)
     }
 
     fun disconnect() {
-        webSocketService?.disconnect()
-        try {
-            getApplication<Application>().unbindService(serviceConnection)
-        } catch (e: IllegalArgumentException) {
-            // Handle the exception gracefully, e.g., log the error or notify the user
+        appScope.launch {
+            webSocketService?.disconnect()
+            try {
+                getApplication<Application>().unbindService(serviceConnection)
+            } catch (e: IllegalArgumentException) {
+                // Handle the exception gracefully, e.g., log the error or notify the user
+            }
+            _isConnected.value = false
         }
-        _isConnected.value = false
     }
 
     private fun handleIncomingMessage(message: SocketMessage) {
         // Handle incoming messages...
     }
 
-
-    override fun onCleared() {
-        super.onCleared()
-        disconnect()
-    }
 }

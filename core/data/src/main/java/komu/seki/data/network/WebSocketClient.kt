@@ -48,28 +48,26 @@ class WebSocketClient(
     private var session: WebSocketSession? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    suspend fun connect(hostAddresses: String, port: Int) {
+    suspend fun connect(hostAddresses: String, port: Int): Boolean {
         val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")
         // Find all valid IP addresses in the string
         val hosts = ipRegex.findAll(hostAddresses).map { it.value }.toList()
         for (host in hosts) {
             try {
                 session = client.webSocketSession {
-                    url("ws://$host:$port/SekiService")
+                    url("ws://$host:$port")
                 }
                 Log.d("socket", "Client Connected to $host")
-                startListening()
-                return  // Exit the function if connection is successful
+                return true  // Exit the function if connection is successful
             } catch (e: Exception) {
                 Log.d("connectionError", "Failed to connect to $host")
                 e.printStackTrace()
             }
         }
         Log.d("connectionError", "Failed to connect to any host")
+        return false
     }
 
-
-    @OptIn(ExperimentalSerializationApi::class)
     suspend fun startListening() {
         scope.launch {
             try {
@@ -90,6 +88,5 @@ class WebSocketClient(
 
     suspend fun disconnect() {
         session?.close()
-        client.close()
     }
 }
