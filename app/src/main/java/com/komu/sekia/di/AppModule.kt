@@ -14,6 +14,9 @@ import komu.seki.data.repository.WebSocketRepositoryImpl
 import komu.seki.domain.MessageHandler
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -27,6 +30,16 @@ object AppModule {
     fun providesPreferencesRepository(
         application: Application
     ): PreferencesRepository = PreferencesDatastore(context = application)
+
+
+    @Provides
+    @Singleton
+    fun provideAppCoroutineScope(): AppCoroutineScope {
+        return object : AppCoroutineScope {
+            override val coroutineContext =
+                SupervisorJob() + Dispatchers.Main.immediate + CoroutineName("App")
+        }
+    }
 
     @Provides
     @Singleton
