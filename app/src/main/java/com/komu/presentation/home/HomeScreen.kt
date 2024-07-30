@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.komu.presentation.home.components.DeviceCard
 import com.komu.sekia.services.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +27,6 @@ import kotlin.coroutines.coroutineContext
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-
     ) {
     val viewModel: HomeViewModel = hiltViewModel()
     val deviceDetails by viewModel.deviceDetails.collectAsState()
@@ -35,27 +35,10 @@ fun HomeScreen(
     Column(modifier = modifier
         .fillMaxSize()
         .padding(16.dp)) {
-        Text(
-            text = if (isConnected) "Connected to the device" else "Not connected",
-            style = MaterialTheme.typography.bodyMedium
+        DeviceCard(
+            deviceDetails = deviceDetails,
+            onSyncAction = { if (isConnected) viewModel.disconnect() else viewModel.connectToWebSocket() },
+            syncStatus = isConnected
         )
-        if (isConnected) {
-            TextButton(onClick = { viewModel.disconnect() }) {
-                Text(text = "Disconnect")
-            }
-        } else {
-            TextButton(onClick = { viewModel.connectToWebSocket() }) {
-                Text(text = "Connect")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        deviceDetails?.let {
-            Text(text = "Device Name: ${it.deviceName}")
-            Text(text = "Host Address: ${it.hostAddress}")
-            Text(text = "Port: ${it.port}")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Messages:")
     }
 }

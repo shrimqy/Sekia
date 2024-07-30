@@ -1,13 +1,13 @@
-package com.komu.presentation.settings
+package com.komu.presentation.devices
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 
 @Composable
-fun SettingsScreen(
+fun DevicesScreen(
     rootNavController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    
+
 }

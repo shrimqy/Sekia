@@ -29,14 +29,14 @@ class MainViewModel @Inject constructor(
     init {
         Log.d("MainViewModel", "ViewModel initialized")
         viewModelScope.launch {
-            preferencesRepository.readSyncStatus().collectLatest { onSyncComplete ->
-                Log.d("MainViewModel", "Onboarding status: $onSyncComplete")
-                startDestination = if (onSyncComplete) {
+            preferencesRepository.readDeviceDetails()?.collectLatest { device ->
+                Log.d("MainViewModel", "Onboarding status: $device")
+                startDestination = if (device.hostAddress != null) {
                     Graph.MainScreenGraph
                 } else {
                     Graph.SyncGraph
                 }
-                delay(100)
+                delay(150)
                 splashCondition = false
             }
         }
