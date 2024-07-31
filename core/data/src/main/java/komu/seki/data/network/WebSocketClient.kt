@@ -88,6 +88,7 @@ class WebSocketClient(
 
 
     suspend fun disconnect() {
+        Log.d("socket", "Session Closed")
         session?.close()
     }
 }
