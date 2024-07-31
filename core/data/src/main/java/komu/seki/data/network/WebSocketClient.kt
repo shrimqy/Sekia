@@ -19,7 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -83,6 +83,15 @@ class WebSocketClient(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    suspend fun sendMessage(message: SocketMessage) {
+        try {
+            session?.send(Frame.Text(json.encodeToString(message)))
+            Log.d("WebSocketClient", "Message sent: $message")
+        } catch (e: Exception) {
+            Log.e("WebSocketClient", "Failed to send message", e)
         }
     }
 

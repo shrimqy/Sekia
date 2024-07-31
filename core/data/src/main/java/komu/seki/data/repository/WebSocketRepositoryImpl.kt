@@ -21,7 +21,7 @@ class WebSocketRepositoryImpl(
     }
 
     override suspend fun sendMessage(message: SocketMessage) {
-        // Implement sending messages
+        webSocketClient.sendMessage(message)
     }
 
 }
