@@ -69,7 +69,7 @@ class WebSocketClient(
         return false
     }
 
-    suspend fun startListening() {
+    suspend fun startListening(onDisconnect: () -> Unit) {
         scope.launch {
             try {
                 session?.let { session ->
@@ -82,6 +82,9 @@ class WebSocketClient(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                Log.d("WebSocketClient", "Session closed")
+                onDisconnect()
             }
         }
     }
@@ -89,7 +92,7 @@ class WebSocketClient(
     suspend fun sendMessage(message: SocketMessage) {
         try {
             session?.send(Frame.Text(json.encodeToString(message)))
-            Log.d("WebSocketClient", "Message sent: $message")
+//            Log.d("WebSocketClient", "Message sent: $message")
         } catch (e: Exception) {
             Log.e("WebSocketClient", "Failed to send message", e)
         }

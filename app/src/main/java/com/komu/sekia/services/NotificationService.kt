@@ -39,9 +39,9 @@ class NotificationService : NotificationListenerService() {
     private fun sendActiveNotifications() {
         val activeNotifications = activeNotifications
         if (activeNotifications.isNullOrEmpty()) {
-            Log.d("NotificationService", "No active notifications found.")
+            Log.d("activeNotification", "No active notifications found.")
         } else {
-            Log.d("NotificationService", "Active notifications found: ${activeNotifications.size}")
+            Log.d("activeNotification", "Active notifications found: ${activeNotifications.size}")
             val rankingMap = currentRanking
             activeNotifications.forEach { sbn ->
                 sendNotification(sbn, rankingMap)
@@ -115,9 +115,7 @@ class NotificationService : NotificationListenerService() {
         }
 
         // Retrieve the actions from the notification
-
         val actions = notification.actions?.map { action ->
-
             NotificationAction(
                 label = action.title.toString(),
                 actionId = action.actionIntent.toString()
@@ -133,11 +131,12 @@ class NotificationService : NotificationListenerService() {
             appIcon = appIcon,
             largeIcon = largeIcon,
             bigPicture = picture,
-            tag = tag,
+            tag = sbn.key,
             groupKey = sbn.groupKey
         )
         scope.launch {
             try {
+                Log.d("NotificationService", "${notificationMessage.appName} ${notificationMessage.title} ${notificationMessage.text} ${notificationMessage.tag} ${notificationMessage.groupKey}")
                 webSocketRepository.sendMessage(notificationMessage)
             } catch (e: Exception) {
                 Log.e("NotificationService", "Failed to send notification message", e)

@@ -106,7 +106,11 @@ class WebSocketService : Service() {
     }
 
     private suspend fun startListening() {
-        webSocketRepository.startListening()
+        webSocketRepository.startListening {
+            scope.launch {
+                stop()
+            }
+        }
     }
 
     private suspend fun disconnect() {
@@ -147,6 +151,7 @@ class WebSocketService : Service() {
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setSilent(true)
             .addAction(R.drawable.ic_launcher_foreground, "Disconnect", disconnectPendingIntent)
             .build()
     }
