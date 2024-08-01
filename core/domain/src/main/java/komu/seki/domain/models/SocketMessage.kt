@@ -1,5 +1,6 @@
 package komu.seki.domain.models
 
+import android.graphics.Bitmap
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -22,9 +23,14 @@ data class ClipboardMessage(
 @Serializable
 @SerialName("2")
 data class NotificationMessage(
-    val packageName: String,
+    val appName: String,
     val title: String?,
     val text: String?,
+    val groupKey: String?,
+    val tag: String?,
+    val appIcon: String?,
+    val largeIcon: String?,
+    val bigPicture: String?,
     val actions: List<NotificationAction>?,
 ) : SocketMessage()
 

@@ -2,8 +2,14 @@ package com.komu.sekia.services
 
 import android.app.Notification
 import android.app.NotificationManager
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Base64
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.domain.models.NotificationAction
@@ -13,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -49,9 +56,54 @@ class NotificationService : NotificationListenerService() {
 
     private fun sendNotification(sbn: StatusBarNotification, rankingMap: RankingMap?) {
         val notification = sbn.notification
+        // Check if the notification is ongoing
+        if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0) {
+            Log.d("NotificationService", "Skipping ongoing notification: ${sbn.packageName}")
+            return
+        }
         val packageName = sbn.packageName
-        val title = notification.extras.getString(Notification.EXTRA_TITLE) ?: "No Title"
-        val text = notification.extras.getString(Notification.EXTRA_TEXT) ?: "No Text"
+
+        // Get the app name using PackageManager
+        val packageManager = packageManager
+
+        val appName = try {
+            val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+            packageManager.getApplicationLabel(applicationInfo).toString()
+        } catch (e: PackageManager.NameNotFoundException) {
+            "Unknown App"
+        }
+
+        // Get app icon
+        val appIcon = try {
+            val appIconDrawable = packageManager.getApplicationIcon(packageName)
+            if (appIconDrawable is BitmapDrawable) {
+                val appIconBitmap = appIconDrawable.bitmap
+                bitmapToBase64(appIconBitmap)
+            } else {
+                // Convert to Bitmap if it's not already a BitmapDrawable
+                val appIconBitmap = drawableToBitmap(appIconDrawable)
+                bitmapToBase64(appIconBitmap)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+        // Get the notification large icon
+        val largeIcon = notification.getLargeIcon()?.let { icon ->
+            val largeIconBitmap = icon.loadDrawable(this)?.let { (it as BitmapDrawable).bitmap }
+            largeIconBitmap?.let { bitmapToBase64(it) }
+        }
+
+        // Get picture (if available)
+        val picture = notification.extras.get(Notification.EXTRA_PICTURE)?.let { pictureBitmap ->
+            bitmapToBase64(pictureBitmap as Bitmap)
+        }
+
+        val title = notification.extras.getString(Notification.EXTRA_TITLE)
+        val text = notification.extras.getString(Notification.EXTRA_TEXT)
+        val id = notification.extras.getString(Notification.EXTRA_NOTIFICATION_ID)
+        val tag = notification.extras.getString(Notification.EXTRA_NOTIFICATION_TAG)
         Log.d("NotificationService", sbn.toString())
 
         // Retrieve the ranking of the notification
@@ -68,20 +120,24 @@ class NotificationService : NotificationListenerService() {
 
             NotificationAction(
                 label = action.title.toString(),
-                actionId = action.actionIntent?.creatorPackage ?: "unknown"
+                actionId = action.actionIntent.toString()
             )
         }
 
+
         val notificationMessage = NotificationMessage(
-            packageName = packageName,
+            appName = appName,
             title = title,
             text = text,
             actions = actions,
+            appIcon = appIcon,
+            largeIcon = largeIcon,
+            bigPicture = picture,
+            tag = tag,
+            groupKey = sbn.groupKey
         )
-
         scope.launch {
             try {
-                Log.d("NotificationService", "Sending notification: $notificationMessage")
                 webSocketRepository.sendMessage(notificationMessage)
             } catch (e: Exception) {
                 Log.e("NotificationService", "Failed to send notification message", e)
@@ -93,4 +149,26 @@ class NotificationService : NotificationListenerService() {
         Log.d("NotificationService", "Notification removed: ${sbn.packageName}")
         // Handle notification removal if necessary
     }
+}
+
+
+private fun bitmapToBase64(bitmap: Bitmap): String {
+    val outputStream = ByteArrayOutputStream()
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+    val byteArray = outputStream.toByteArray()
+    return Base64.encodeToString(byteArray, Base64.DEFAULT)
+}
+
+// Helper function to convert a Drawable to Bitmap
+private fun drawableToBitmap(drawable: Drawable): Bitmap {
+    if (drawable is BitmapDrawable) {
+        return drawable.bitmap
+    }
+    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
+    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    drawable.setBounds(0, 0, canvas.width, canvas.height)
+    drawable.draw(canvas)
+    return bitmap
 }
