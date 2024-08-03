@@ -1,5 +1,6 @@
 package com.komu.sekia.services
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,11 +11,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.ConnectivityManager
+import android.net.MacAddress
 import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
+import android.provider.Settings.*
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +31,7 @@ import com.komu.sekia.MainActivity
 import com.komu.sekia.R
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.domain.models.DeviceInfo
+import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
@@ -122,9 +128,17 @@ class WebSocketService : Service() {
     }
 
 
+    @SuppressLint("HardwareIds")
     private fun getDeviceInfo(context: Context): DeviceInfo {
         val deviceName = Build.MODEL
+        val androidId = Secure.getString(context.contentResolver, Secure.ANDROID_ID)
+        return DeviceInfo(
+            id = androidId,
+            deviceName = deviceName
+        )
+    }
 
+    private fun getDeviceStatus(context: Context): DeviceStatus {
         val batteryStatus: Int? =
             context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
                 ?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
@@ -135,8 +149,7 @@ class WebSocketService : Service() {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val bluetooth = bluetoothManager.adapter.isEnabled
 
-        return DeviceInfo(
-            deviceName = deviceName,
+        return DeviceStatus(
             batteryStatus = batteryStatus,
             wifiStatus = wifi,
             bluetoothStatus = bluetooth
