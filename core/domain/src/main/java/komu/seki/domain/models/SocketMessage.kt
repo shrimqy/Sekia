@@ -48,11 +48,17 @@ data class NotificationAction(
 @Serializable
 @SerialName("3")
 data class DeviceInfo(
+    val id: String,
     val deviceName: String?,
+) : SocketMessage()
+
+@Serializable
+@SerialName("4")
+data class DeviceStatus(
     val batteryStatus: Int?,
     val wifiStatus: Boolean?,
     val bluetoothStatus: Boolean?,
-) : SocketMessage()
+)
 
 
 
