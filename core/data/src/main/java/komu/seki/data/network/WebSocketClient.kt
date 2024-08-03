@@ -1,6 +1,14 @@
 package komu.seki.data.network
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
+import android.os.Build
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.websocket.WebSockets
@@ -12,6 +20,7 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import komu.seki.domain.MessageHandler
 import komu.seki.domain.models.ClipboardMessage
+import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
@@ -24,6 +33,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import kotlin.coroutines.coroutineContext
 
 class WebSocketClient(
     private val messageHandler: MessageHandler
@@ -48,10 +58,11 @@ class WebSocketClient(
     private var session: WebSocketSession? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    suspend fun connect(hostAddresses: String): Boolean {
+    suspend fun connect(hostAddresses: String, device: DeviceInfo): Boolean {
         val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")
         // Find all valid IP addresses in the string
         val hosts = ipRegex.findAll(hostAddresses).map { it.value }.toList()
+
         for (host in hosts) {
             try {
                 val port = 5149
@@ -59,6 +70,7 @@ class WebSocketClient(
                     url("ws://$host:$port")
                 }
                 Log.d("socket", "Client Connected to $host")
+                sendMessage(device)
                 return true  // Exit the function if connection is successful
             } catch (e: Exception) {
                 Log.d("connectionError", "Failed to connect to $host")
@@ -92,7 +104,7 @@ class WebSocketClient(
     suspend fun sendMessage(message: SocketMessage) {
         try {
             session?.send(Frame.Text(json.encodeToString(message)))
-//            Log.d("WebSocketClient", "Message sent: $message")
+            Log.d("WebSocketClient", "Message sent: $message")
         } catch (e: Exception) {
             Log.e("WebSocketClient", "Failed to send message", e)
         }

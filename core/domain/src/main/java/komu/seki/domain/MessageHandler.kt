@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.util.Log
 import komu.seki.domain.models.ClipboardMessage
+import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
@@ -17,6 +18,7 @@ class MessageHandler(
             is Response -> handleResponse(message)
             is ClipboardMessage -> handleClipboardMessage(message)
             is NotificationMessage -> handleNotificationMessage(message)
+            is DeviceInfo -> handleDeviceInfo(message)
         }
     }
 
@@ -32,6 +34,10 @@ class MessageHandler(
     }
 
     private fun handleNotificationMessage(notificationMessage: NotificationMessage) {
+        // Handle notification message
+    }
+
+    private fun handleDeviceInfo(deviceInfo: DeviceInfo) {
         // Handle notification message
     }
 }

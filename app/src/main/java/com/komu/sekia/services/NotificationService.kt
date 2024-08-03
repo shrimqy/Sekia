@@ -1,12 +1,18 @@
 package com.komu.sekia.services
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Base64
@@ -14,10 +20,12 @@ import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.domain.models.NotificationAction
 import komu.seki.domain.models.NotificationMessage
+import komu.seki.domain.models.NotificationType
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
@@ -30,11 +38,45 @@ class NotificationService : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    class ActiveNotificationsBroadcastReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS -> {
+                    val service = context as? NotificationService
+                    service?.sendActiveNotifications()
+                }
+            }
+        }
+    }
+
+    private val broadcastReceiver = ActiveNotificationsBroadcastReceiver()
+
+
+
     override fun onCreate() {
         super.onCreate()
         Log.d("NotificationService", "Service created")
+        val filter = IntentFilter(WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(broadcastReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            sendBroadcast(Intent(WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS))
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(broadcastReceiver)
+        scope.cancel()
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        Log.d("NotificationService", "Listener connected")
+        // Now it's safe to call sendActiveNotifications
         sendActiveNotifications()
     }
+
 
     private fun sendActiveNotifications() {
         val activeNotifications = activeNotifications
@@ -44,17 +86,17 @@ class NotificationService : NotificationListenerService() {
             Log.d("activeNotification", "Active notifications found: ${activeNotifications.size}")
             val rankingMap = currentRanking
             activeNotifications.forEach { sbn ->
-                sendNotification(sbn, rankingMap)
+                sendNotification(sbn, rankingMap, NotificationType.ACTIVE)
             }
         }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         Log.d("NotificationService", "Notification posted: ${sbn.packageName}")
-        sendNotification(sbn, currentRanking)
+        sendNotification(sbn, currentRanking, NotificationType.NEW)
     }
 
-    private fun sendNotification(sbn: StatusBarNotification, rankingMap: RankingMap?) {
+    private fun sendNotification(sbn: StatusBarNotification, rankingMap: RankingMap?, notificationType: NotificationType) {
         val notification = sbn.notification
         // Check if the notification is ongoing
         if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0) {
@@ -122,7 +164,6 @@ class NotificationService : NotificationListenerService() {
             )
         }
 
-
         val notificationMessage = NotificationMessage(
             appName = appName,
             title = title,
@@ -132,7 +173,8 @@ class NotificationService : NotificationListenerService() {
             largeIcon = largeIcon,
             bigPicture = picture,
             tag = sbn.key,
-            groupKey = sbn.groupKey
+            groupKey = sbn.groupKey,
+            notificationType = notificationType
         )
         scope.launch {
             try {

@@ -1,8 +1,12 @@
 package komu.seki.domain.models
 
-import android.graphics.Bitmap
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
+enum class NotificationType {
+    ACTIVE,
+    NEW
+}
 
 @Serializable
 sealed class SocketMessage
@@ -23,6 +27,7 @@ data class ClipboardMessage(
 @Serializable
 @SerialName("2")
 data class NotificationMessage(
+    val notificationType: NotificationType,
     val appName: String,
     val title: String?,
     val text: String?,
@@ -39,3 +44,15 @@ data class NotificationAction(
     val label: String,
     val actionId: String
 )
+
+@Serializable
+@SerialName("3")
+data class DeviceInfo(
+    val deviceName: String?,
+    val batteryStatus: Int?,
+    val wifiStatus: Boolean?,
+    val bluetoothStatus: Boolean?,
+) : SocketMessage()
+
+
+

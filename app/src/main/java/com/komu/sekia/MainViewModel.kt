@@ -1,7 +1,13 @@
 package com.komu.sekia
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.net.wifi.WifiManager
+import android.os.BatteryManager
+import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,9 +16,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.komu.sekia.navigation.Graph
 import com.komu.sekia.services.Actions
+import com.komu.sekia.services.NotificationService
 import com.komu.sekia.services.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import komu.seki.domain.models.DeviceDetails
+import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,13 +29,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    context: Context,
     preferencesRepository: PreferencesRepository,
 ): ViewModel() {
     var splashCondition by mutableStateOf(true)
@@ -60,6 +67,7 @@ class MainViewModel @Inject constructor(
     init {
         Log.d("MainViewModel", "ViewModel initialized")
         viewModelScope.launch {
+
             preferencesRepository.readDeviceDetails()?.collectLatest { device ->
                 Log.d("MainViewModel", "Onboarding status: $device")
                 startDestination = if (device.hostAddress != null) {

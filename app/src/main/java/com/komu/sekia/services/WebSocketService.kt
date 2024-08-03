@@ -5,9 +5,15 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.bluetooth.BluetoothManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -15,9 +21,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.EXTRA_NOTIFICATION_ID
+import androidx.core.app.NotificationManagerCompat
 import com.komu.sekia.MainActivity
 import com.komu.sekia.R
 import dagger.hilt.android.AndroidEntryPoint
+import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
@@ -37,6 +45,9 @@ class WebSocketService : Service() {
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
 
+    @Inject
+    lateinit var context: Context
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val binder = LocalBinder()
     private var isForegroundStarted = false // Flag to track if foreground has been started
@@ -48,6 +59,8 @@ class WebSocketService : Service() {
     override fun onBind(intent: Intent): IBinder {
         return binder
     }
+
+
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("WebSocketService", "onStartCommand called")
@@ -72,16 +85,19 @@ class WebSocketService : Service() {
         scope.launch {
             Log.d("connectedVar", isConnected.toString())
             try {
+                val deviceInfo = getDeviceInfo(context)
                 Log.d("service", "trying to connect")
-                isConnected = connect(hostAddress)
-                startListening()
-                preferencesRepository.saveSynStatus(true) // Update sync status
-                // Only start foreground after successful connection and if not already started
-                if (!isForegroundStarted) {
-                    startForeground(NOTIFICATION_ID, createNotification())
-                    isForegroundStarted = true
+                isConnected = connect(hostAddress, deviceInfo)
+                if (isConnected) {
+                    startListening()
+                    preferencesRepository.saveSynStatus(true)
+                    if (!isForegroundStarted) {
+                        startForeground(NOTIFICATION_ID, createNotification())
+                        isForegroundStarted = true
+                    }
+                    // Trigger sending of active notifications
+                    sendActiveNotifications()
                 } else {
-                    // If connection fails, wait before retrying
                     delay(5000)
                 }
             } catch (e: Exception) {
@@ -101,8 +117,30 @@ class WebSocketService : Service() {
         }
     }
 
-    private suspend fun connect(hostAddress: String): Boolean {
-        return webSocketRepository.connect(hostAddress)
+    private suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo): Boolean {
+        return webSocketRepository.connect(hostAddress, deviceInfo)
+    }
+
+
+    private fun getDeviceInfo(context: Context): DeviceInfo {
+        val deviceName = Build.MODEL
+
+        val batteryStatus: Int? =
+            context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                ?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+
+        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val wifi = wifiManager.isWifiEnabled
+
+        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val bluetooth = bluetoothManager.adapter.isEnabled
+
+        return DeviceInfo(
+            deviceName = deviceName,
+            batteryStatus = batteryStatus,
+            wifiStatus = wifi,
+            bluetoothStatus = bluetooth
+        )
     }
 
     private suspend fun startListening() {
@@ -156,6 +194,12 @@ class WebSocketService : Service() {
             .build()
     }
 
+    private fun sendActiveNotifications() {
+        val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS)
+        intent.setPackage(packageName)
+        sendBroadcast(intent)
+    }
+
     override fun onDestroy() {
         Log.d("WebSocketService", "onDestroy called")
         scope.launch {
@@ -169,6 +213,7 @@ class WebSocketService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1
         const val EXTRA_HOST_ADDRESS = "extra_host_address"
+        const val ACTION_SEND_ACTIVE_NOTIFICATIONS = "com.komu.sekia.services.SEND_ACTIVE_NOTIFICATIONS"
     }
 }
 
