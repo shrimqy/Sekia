@@ -6,27 +6,24 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
-import android.content.ComponentName
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.net.ConnectivityManager
-import android.net.MacAddress
 import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Binder
-import android.os.Build
 import android.os.IBinder
-import android.provider.Settings
-import android.provider.Settings.*
+import android.provider.Settings.Global
+import android.provider.Settings.Secure
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.EXTRA_NOTIFICATION_ID
-import androidx.core.app.NotificationManagerCompat
 import com.komu.sekia.MainActivity
 import com.komu.sekia.R
 import dagger.hilt.android.AndroidEntryPoint
@@ -66,7 +63,36 @@ class WebSocketService : Service() {
         return binder
     }
 
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            sendDeviceStatus()
+        }
+    }
 
+    private val wifiReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            sendDeviceStatus()
+        }
+    }
+
+    private val bluetoothReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            sendDeviceStatus()
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+
+        // Register battery receiver
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+
+        // Register Wi-Fi receiver
+        registerReceiver(wifiReceiver, IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION))
+
+        // Register Bluetooth receiver
+        registerReceiver(bluetoothReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d("WebSocketService", "onStartCommand called")
@@ -89,9 +115,9 @@ class WebSocketService : Service() {
     private var isConnected by mutableStateOf(false)
     private fun start(hostAddress: String) {
         scope.launch {
-            Log.d("connectedVar", isConnected.toString())
             try {
                 val deviceInfo = getDeviceInfo(context)
+                val deviceStatus = getDeviceStatus(context)
                 Log.d("service", "trying to connect")
                 isConnected = connect(hostAddress, deviceInfo)
                 if (isConnected) {
@@ -101,14 +127,27 @@ class WebSocketService : Service() {
                         startForeground(NOTIFICATION_ID, createNotification())
                         isForegroundStarted = true
                     }
-                    // Trigger sending of active notifications
+                    Log.d("service", deviceStatus.toString())
+                    sendMessage(deviceStatus)
                     sendActiveNotifications()
+
                 } else {
                     delay(5000)
                 }
             } catch (e: Exception) {
                 Log.e("WebSocketService", "Error in WebSocket connection", e)
                 delay(5000) // Wait before retrying
+            }
+        }
+    }
+
+    private fun sendDeviceStatus() {
+        scope.launch {
+            try {
+                val deviceStatus = getDeviceStatus(context)
+                webSocketRepository.sendMessage(deviceStatus)
+            } catch (e: Exception) {
+                Log.e("WebSocketService", "Failed to send device status", e)
             }
         }
     }
@@ -130,7 +169,7 @@ class WebSocketService : Service() {
 
     @SuppressLint("HardwareIds")
     private fun getDeviceInfo(context: Context): DeviceInfo {
-        val deviceName = Build.MODEL
+        val deviceName = Global.getString(context.contentResolver, "device_name")
         val androidId = Secure.getString(context.contentResolver, Secure.ANDROID_ID)
         return DeviceInfo(
             id = androidId,
@@ -212,6 +251,7 @@ class WebSocketService : Service() {
         intent.setPackage(packageName)
         sendBroadcast(intent)
     }
+
 
     override fun onDestroy() {
         Log.d("WebSocketService", "onDestroy called")

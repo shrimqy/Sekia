@@ -51,8 +51,6 @@ class NotificationService : NotificationListenerService() {
 
     private val broadcastReceiver = ActiveNotificationsBroadcastReceiver()
 
-
-
     override fun onCreate() {
         super.onCreate()
         Log.d("NotificationService", "Service created")

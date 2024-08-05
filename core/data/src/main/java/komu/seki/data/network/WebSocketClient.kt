@@ -1,14 +1,6 @@
 package komu.seki.data.network
 
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.BatteryManager
-import android.os.Build
 import android.util.Log
-import androidx.compose.ui.platform.LocalContext
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.websocket.WebSockets
@@ -33,7 +25,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import kotlin.coroutines.coroutineContext
 
 class WebSocketClient(
     private val messageHandler: MessageHandler
@@ -104,7 +95,7 @@ class WebSocketClient(
     suspend fun sendMessage(message: SocketMessage) {
         try {
             session?.send(Frame.Text(json.encodeToString(message)))
-            Log.d("WebSocketClient", "Message sent: $message")
+//            Log.d("WebSocketClient", "Message sent: $message")
         } catch (e: Exception) {
             Log.e("WebSocketClient", "Failed to send message", e)
         }

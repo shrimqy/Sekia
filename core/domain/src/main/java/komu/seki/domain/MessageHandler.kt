@@ -6,6 +6,7 @@ import android.content.Context
 import android.util.Log
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
+import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
@@ -19,7 +20,12 @@ class MessageHandler(
             is ClipboardMessage -> handleClipboardMessage(message)
             is NotificationMessage -> handleNotificationMessage(message)
             is DeviceInfo -> handleDeviceInfo(message)
+            is DeviceStatus -> handleDeviceStatus(message)
         }
+    }
+
+    private fun handleDeviceStatus(deviceStatus: DeviceStatus) {
+        TODO("Not yet implemented")
     }
 
     private fun handleResponse(response: Response) {

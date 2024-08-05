@@ -58,7 +58,7 @@ data class DeviceStatus(
     val batteryStatus: Int?,
     val wifiStatus: Boolean?,
     val bluetoothStatus: Boolean?,
-)
+) : SocketMessage()
 
 
 
