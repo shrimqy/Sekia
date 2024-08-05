@@ -99,11 +99,6 @@ class MainActivity : ComponentActivity() {
             .show()
     }
 
-    override fun onResume() {
-        super.onResume()
-        checkNotificationListenerPermission()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         if (bound) {
