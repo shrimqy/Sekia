@@ -23,43 +23,23 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.komu.sekia.navigation.graphs.RootNavGraph
 import com.komu.sekia.services.Actions
 import com.komu.sekia.services.WebSocketService
+import com.komu.sekia.ui.base.BaseActivity
 import com.komu.sekia.ui.theme.SekiraTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : BaseActivity() {
     private val viewModel by viewModels<MainViewModel>()
-    private var webSocketService: WebSocketService? = null
-    private var bound: Boolean = false
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as WebSocketService.LocalBinder
-            webSocketService = binder.getService()
-            bound = true
-        }
-
-        override fun onServiceDisconnected(arg0: ComponentName) {
-            bound = false
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Intent(this, WebSocketService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-        }
-
         viewModel.startWebSocketService(this)
-
         checkNotificationListenerPermission()
-
         installSplashScreen().apply {
             setKeepOnScreenCondition { viewModel.splashCondition }
         }
-
         enableEdgeToEdge()
-
         setContent {
             SekiraTheme {
                 Box(
@@ -97,13 +77,5 @@ class MainActivity : ComponentActivity() {
                 dialog.dismiss()
             }
             .show()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        if (bound) {
-            unbindService(connection)
-            bound = false
-        }
     }
 }
