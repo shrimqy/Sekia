@@ -55,10 +55,10 @@ fun AppTopBar(
                     active = active,
                     onActiveChange = { active = it },
                     placeholder = {
-                        if (active) {
-                            Text(text = "Search title, tags")
+                        if (selectedItem == 1 ) {
+                            Text(text = "Search Devices")
                         } else {
-                            Text(text = "Search your library")
+                            Text(text = "Search Settings")
                         }
                     },
                     leadingIcon = {
@@ -91,7 +91,7 @@ fun AppTopBar(
         },
         actions = {
             Row {
-                if (!active) {
+                if (!active && selectedItem !=0) {
                     IconButton(onClick = { active = true }) {
                         Icon(imageVector = Icons.Default.Search, contentDescription = "Search Icon")
                     }

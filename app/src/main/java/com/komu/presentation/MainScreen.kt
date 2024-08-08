@@ -3,6 +3,8 @@ package com.komu.presentation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
@@ -18,6 +20,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.komu.sekia.R
 import com.komu.sekia.navigation.MainRouteScreen
 import com.komu.sekia.navigation.graphs.MainNavGraph
 import komu.seki.presentation.components.AppTopBar
@@ -35,11 +38,11 @@ fun MainScreen(
 ) {
     val showBottomNavEvent = Channel<Boolean>()
 
-//    val homeAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.anim_library_enter)
+    val homeAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_home)
 //    val settingsAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.anim_more_enter)
     val navigationItem = remember {
         listOf(
-            NavigationItem(null, text = "Home"),
+            NavigationItem(homeAnimatedIcon, text = "Home"),
             NavigationItem(null, text = "Devices"),
             NavigationItem(null, text = "Settings")
         )

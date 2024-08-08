@@ -43,12 +43,12 @@ fun DeviceCard(
 ) {
     Card(
         onClick = { /*TODO: Handle card click */ },
-        shape = MaterialTheme.shapes.medium,
+        shape = CardDefaults.shape,
         colors = CardDefaults.cardColors(),
         modifier = modifier
             .padding(all = 2.dp)
     ) {
-        Box(Modifier.padding(all = 6.dp)) {
+        Box(Modifier.padding(all = 10.dp)) {
             deviceDetails?.let { device ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -60,39 +60,40 @@ fun DeviceCard(
                         modifier = Modifier.size(56.dp)
                     )
                     Spacer(Modifier.width(16.dp))
-                    Column(
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        device.deviceName?.let {
-                            Text(
-                                text = it,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
-                        Row {
-                            batteryLevel?.let { level ->
-                                Icon(
-                                    imageVector = Icons.Rounded.Battery2Bar,
-                                    contentDescription = "Battery Icon",
+                    Column(
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                            device.deviceName?.let {
+                                Text(
+                                    text = it,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.titleMedium
                                 )
-                                Text(text = "$level%")
                             }
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                            Row {
+                                batteryLevel?.let { level ->
+                                    Icon(
+                                        imageVector = Icons.Rounded.Battery2Bar,
+                                        contentDescription = "Battery Icon",
+                                    )
+                                    Text(text = "$level%")
+                                }
+                            }
                             Text(
                                 text = if (syncStatus) "Connected" else "Disconnected",
                             )
-                            IconButton(onClick = onSyncAction) {
-                                Icon(
-                                    imageVector = if (syncStatus) Icons.Rounded.SyncDisabled else Icons.Rounded.Sync,
-                                    contentDescription = if (syncStatus) "Disconnect" else "Sync",
-                                )
-                            }
+                        }
+                        IconButton(onClick = onSyncAction) {
+                            Icon(
+                                imageVector = if (syncStatus) Icons.Rounded.SyncDisabled else Icons.Rounded.Sync,
+                                contentDescription = if (syncStatus) "Disconnect" else "Sync",
+                            )
                         }
                     }
                 }
