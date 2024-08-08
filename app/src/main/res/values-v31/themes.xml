@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Sekia" parent="android:Theme.Material.Light.NoActionBar" />
+
     <style name="App.Starting.Theme" parent="Theme.SplashScreen">
         <item name="android:windowSplashScreenBackground">#1E1E1E</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
