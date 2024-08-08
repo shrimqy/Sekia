@@ -39,8 +39,8 @@ fun MainScreen(
     val showBottomNavEvent = Channel<Boolean>()
 
     val homeAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_home)
-    val devicesAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_settings)
-    val settingsAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_devices)
+    val devicesAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_devices)
+    val settingsAnimatedIcon = AnimatedImageVector.animatedVectorResource(R.drawable.ic_settings)
     val navigationItem = remember {
         listOf(
             NavigationItem(homeAnimatedIcon, text = "Home"),

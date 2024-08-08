@@ -84,13 +84,9 @@ class WebSocketService : Service() {
     override fun onCreate() {
         super.onCreate()
 
-        // Register battery receiver
+        // Register Receivers
         registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-
-        // Register Wi-Fi receiver
         registerReceiver(wifiReceiver, IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION))
-
-        // Register Bluetooth receiver
         registerReceiver(bluetoothReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
     }
 
