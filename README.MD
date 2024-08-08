@@ -50,4 +50,4 @@
     - Due to Android's restrictions, clipboard sharing is only possible via the sharesheet after Android 13.
 ## License
 
-Sekia is licensed under the MIT License. See [LICENSE](https://github.com/shrimqy/Seki/blob/master/LICENSE) for more details.
+Sekia is licensed under the MIT License. See [LICENSE](https://github.com/shrimqy/Sekia/blob/master/LICENSE) for more details.
