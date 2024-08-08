@@ -1,7 +1,7 @@
 # Sekia
 
 **Sekia** is an opinionated, custom-built app that bridges the gap between your Windows PC and Android phone, offering seamless clipboard and notification sharing. Born out of the frustration with existing solutions, Sekia provides a straightforward, no-nonsense alternative for those who need more from their Phone Link experience.
-
+![screenshots of app](./.github/readme-images/HomeScreen.png)
 ## Features
 
 - **Clipboard Sharing**: Easily share clipboard content between your Android device and Windows PC.
@@ -29,7 +29,7 @@
 
 ### Windows
 
-1. **Download the Windows App**: [Sekia for Windows](#) (Link to the corresponding Windows app repo).
+1. **Download the Windows App**: [Seki](https://github.com/shrimqy/Seki/).
 2. **Install the Certificate**:
     - Manually install the provided certificate to ensure secure communication between devices.
 
