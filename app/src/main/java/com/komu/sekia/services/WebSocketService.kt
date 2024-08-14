@@ -141,6 +141,7 @@ class WebSocketService : Service() {
         scope.launch {
             try {
                 val deviceStatus = getDeviceStatus(context)
+                val currentBatteryLevel = deviceStatus.batteryStatus
                 webSocketRepository.sendMessage(deviceStatus)
             } catch (e: Exception) {
                 Log.e("WebSocketService", "Failed to send device status", e)
@@ -178,6 +179,11 @@ class WebSocketService : Service() {
             context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
                 ?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
 
+        val isCharging = batteryStatus != null &&
+                context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                    ?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) == BatteryManager.BATTERY_STATUS_CHARGING
+
+        Log.d("charging", isCharging.toString())
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifi = wifiManager.isWifiEnabled
 
@@ -187,7 +193,8 @@ class WebSocketService : Service() {
         return DeviceStatus(
             batteryStatus = batteryStatus,
             wifiStatus = wifi,
-            bluetoothStatus = bluetooth
+            bluetoothStatus = bluetooth,
+            chargingStatus = isCharging
         )
     }
 

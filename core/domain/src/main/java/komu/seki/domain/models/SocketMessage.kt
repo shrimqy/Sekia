@@ -56,6 +56,7 @@ data class DeviceInfo(
 @SerialName("4")
 data class DeviceStatus(
     val batteryStatus: Int?,
+    val chargingStatus: Boolean?,
     val wifiStatus: Boolean?,
     val bluetoothStatus: Boolean?,
 ) : SocketMessage()
