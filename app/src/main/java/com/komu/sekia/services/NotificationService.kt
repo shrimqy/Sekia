@@ -97,7 +97,7 @@ class NotificationService : NotificationListenerService() {
     private fun sendNotification(sbn: StatusBarNotification, rankingMap: RankingMap?, notificationType: NotificationType) {
         val notification = sbn.notification
         // Check if the notification is ongoing
-        if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0) {
+        if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0 and Notification.FLAG_FOREGROUND_SERVICE) {
             Log.d("NotificationService", "Skipping ongoing notification: ${sbn.packageName}")
             return
         }
