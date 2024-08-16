@@ -61,5 +61,16 @@ data class DeviceStatus(
     val bluetoothStatus: Boolean?,
 ) : SocketMessage()
 
+@Serializable
+@SerialName("5")
+data class PlaybackData(
+    val appName: String?,
+    val trackTitle: String,
+    val artist: String?,
+    val thumbnail: String?,
+    val volume: Double?,
+    val isPlaying: Boolean?
+) : SocketMessage()
+
 
 

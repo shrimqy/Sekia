@@ -8,6 +8,7 @@ import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.NotificationMessage
+import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 
@@ -21,7 +22,12 @@ class MessageHandler(
             is NotificationMessage -> handleNotificationMessage(message)
             is DeviceInfo -> handleDeviceInfo(message)
             is DeviceStatus -> handleDeviceStatus(message)
+            is PlaybackData -> handlePlaybackData(message)
         }
+    }
+
+    private fun handlePlaybackData(message: PlaybackData) {
+        Log.d("playback", message.trackTitle + message.artist)
     }
 
     private fun handleDeviceStatus(deviceStatus: DeviceStatus) {
