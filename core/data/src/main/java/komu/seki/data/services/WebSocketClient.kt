@@ -1,4 +1,4 @@
-package komu.seki.data.network
+package komu.seki.data.services
 
 import android.util.Log
 import io.ktor.client.HttpClient
@@ -10,10 +10,12 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
-import komu.seki.domain.MessageHandler
+import komu.seki.domain.repository.MessageHandler
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
+import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.NotificationMessage
+import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 import kotlinx.coroutines.CoroutineScope
@@ -43,15 +45,13 @@ class WebSocketClient(
         }
         isLenient = true
         classDiscriminator = "type"
-    // Name of the field that indicates the type
     }
 
     private var session: WebSocketSession? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     suspend fun connect(hostAddresses: String, device: DeviceInfo): Boolean {
-        val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")
-        // Find all valid IP addresses in the string
+        val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")  // Find all valid IP addresses in the string
         val hosts = ipRegex.findAll(hostAddresses).map { it.value }.toList()
 
         for (host in hosts) {
@@ -79,7 +79,7 @@ class WebSocketClient(
                     for (frame in session.incoming) {
                         if (frame is Frame.Text) {
                             val socketMessage = json.decodeFromString<SocketMessage>(frame.readText())
-                            messageHandler.handleMessage(socketMessage)
+                            handleMessage(socketMessage)
                         }
                     }
                 }
@@ -98,6 +98,17 @@ class WebSocketClient(
 //            Log.d("WebSocketClient", "Message sent: $message")
         } catch (e: Exception) {
             Log.e("WebSocketClient", "Failed to send message", e)
+        }
+    }
+
+    private fun handleMessage(message: SocketMessage) {
+        when (message) {
+            is Response -> messageHandler.handleResponse(message)
+            is ClipboardMessage -> messageHandler.handleClipboardMessage(message)
+            is NotificationMessage -> messageHandler.handleNotificationMessage(message)
+            is DeviceInfo -> messageHandler.handleDeviceInfo(message)
+            is DeviceStatus -> messageHandler.handleDeviceStatus(message)
+            is PlaybackData -> messageHandler.handlePlaybackData(message)
         }
     }
 

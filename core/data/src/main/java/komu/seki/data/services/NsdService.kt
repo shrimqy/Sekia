@@ -1,4 +1,4 @@
-package komu.seki.data.network
+package komu.seki.data.services
 
 import android.content.Context
 import android.content.Context.WIFI_SERVICE

@@ -69,7 +69,7 @@ data class PlaybackData(
     val artist: String?,
     val thumbnail: String?,
     val volume: Double?,
-    val isPlaying: Boolean?
+    val isPlaying: Boolean
 ) : SocketMessage()
 
 

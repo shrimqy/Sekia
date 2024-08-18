@@ -72,7 +72,7 @@
             android:exported="false"
             android:name=".services.NotificationService$ActiveNotificationsBroadcastReceiver">
             <intent-filter>
-                <action android:name="com.komu.sekia.services.SEND_ACTIVE_NOTIFICATIONS" />
+                <action android:name="com.komu.sekia.services.NotificationService.SEND_ACTIVE_NOTIFICATIONS" />
             </intent-filter>
         </receiver>
     </application>

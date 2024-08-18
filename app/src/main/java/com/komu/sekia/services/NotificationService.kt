@@ -18,6 +18,8 @@ import android.service.notification.StatusBarNotification
 import android.util.Base64
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
+import komu.seki.common.util.bitmapToBase64
+import komu.seki.common.util.drawableToBitmap
 import komu.seki.domain.models.NotificationAction
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.NotificationType
@@ -58,7 +60,9 @@ class NotificationService : NotificationListenerService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(broadcastReceiver, filter, RECEIVER_NOT_EXPORTED)
         } else {
-            sendBroadcast(Intent(WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS))
+            val intent = Intent(WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS)
+            intent.setClassName(this, "com.komu.sekia.services.NotificationService\$ActiveNotificationsBroadcastReceiver")
+            sendBroadcast(intent)
         }
     }
 
@@ -191,23 +195,3 @@ class NotificationService : NotificationListenerService() {
 }
 
 
-private fun bitmapToBase64(bitmap: Bitmap): String {
-    val outputStream = ByteArrayOutputStream()
-    bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-    val byteArray = outputStream.toByteArray()
-    return Base64.encodeToString(byteArray, Base64.DEFAULT)
-}
-
-// Helper function to convert a Drawable to Bitmap
-private fun drawableToBitmap(drawable: Drawable): Bitmap {
-    if (drawable is BitmapDrawable) {
-        return drawable.bitmap
-    }
-    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
-    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-    return bitmap
-}

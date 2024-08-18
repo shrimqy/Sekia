@@ -7,11 +7,12 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import komu.seki.data.repository.MessageHandlerImpl
 import komu.seki.data.repository.PreferencesDatastore
-import komu.seki.data.network.NsdService
-import komu.seki.data.network.WebSocketClient
+import komu.seki.data.services.NsdService
+import komu.seki.data.services.WebSocketClient
 import komu.seki.data.repository.WebSocketRepositoryImpl
-import komu.seki.domain.MessageHandler
+import komu.seki.domain.repository.MessageHandler
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineName
@@ -45,12 +46,12 @@ object AppModule {
     @Singleton
     fun providesMessageHandler(
         application: Application
-    ): MessageHandler = MessageHandler(context = application)
+    ): MessageHandler = MessageHandlerImpl(context = application)
+
 
     @Provides
     @Singleton
     fun providesWebSocketClient(messageHandler: MessageHandler): WebSocketClient = WebSocketClient(messageHandler)
-
 
     @Provides
     @Singleton

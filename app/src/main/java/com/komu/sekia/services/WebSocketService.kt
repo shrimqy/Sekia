@@ -126,7 +126,6 @@ class WebSocketService : Service() {
                     Log.d("service", deviceStatus.toString())
                     sendMessage(deviceStatus)
                     sendActiveNotifications()
-
                 } else {
                     delay(5000)
                 }
@@ -269,7 +268,7 @@ class WebSocketService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1
         const val EXTRA_HOST_ADDRESS = "extra_host_address"
-        const val ACTION_SEND_ACTIVE_NOTIFICATIONS = "com.komu.sekia.services.SEND_ACTIVE_NOTIFICATIONS"
+        const val ACTION_SEND_ACTIVE_NOTIFICATIONS = "com.komu.sekia.services.NotificationService.SEND_ACTIVE_NOTIFICATIONS"
     }
 }
 

@@ -1,6 +1,6 @@
 package komu.seki.data.repository
 
-import komu.seki.data.network.WebSocketClient
+import komu.seki.data.services.WebSocketClient
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.WebSocketRepository
@@ -24,5 +24,6 @@ class WebSocketRepositoryImpl(
     override suspend fun sendMessage(message: SocketMessage) {
         webSocketClient.sendMessage(message)
     }
+
 
 }
