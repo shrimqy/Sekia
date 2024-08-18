@@ -13,6 +13,8 @@ lifecycleRuntimeKtx = "2.8.4"
 navigation = "2.7.7"
 datastore = "1.1.1"
 
+androidx-media = "1.7.0"
+
 hilt = "2.51.1"
 hilt-androidx = "1.2.0"
 
@@ -30,7 +32,7 @@ material = "1.12.0"
 core-splashscreen = "1.0.1"
 
 [libraries]
-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 compose-navigation = { module = "androidx.navigation:navigation-compose", version.ref = "navigation"}
@@ -40,11 +42,10 @@ material = { group = "com.google.android.material", name = "material", version.r
 kotlinx-immutables = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version = "0.3.7" }
 
 
-# Media3
-media3-common = { module = "androidx.media3:media3-common", version = "1.4.0"}
-media3-session = { module = "androidx.media3:media3-session", version = "1.4.0"}
-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version = "1.4.0"}
-media3-ui = { module = "androidx.media3:media3-ui", version = "1.4.0"}
+# Media
+androidx-media = { module = "androidx.media:media", version.ref = "androidx-media" }
+
+
 
 
 # Coil
