@@ -54,6 +54,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:common"))
     implementation(project(":core:data"))
     implementation(project(":core:domain"))
     implementation(project(":core:presentation"))
@@ -70,6 +71,7 @@ dependencies {
 
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
+
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
