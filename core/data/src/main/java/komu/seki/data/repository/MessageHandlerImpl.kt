@@ -12,37 +12,56 @@ import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
-import komu.seki.domain.repository.MessageHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class MessageHandlerImpl(
-    private val context: Context
-) : MessageHandler {
+class MessageHandler (private val sendMessage: suspend (SocketMessage) -> Unit) {
+    fun handleMessages(context: Context, message: SocketMessage) {
+        when (message) {
+            is Response -> handleResponse(message)
+            is ClipboardMessage -> handleClipboardMessage(context, message)
+            is NotificationMessage -> handleNotificationMessage(message)
+            is DeviceInfo -> handleDeviceInfo(message)
+            is DeviceStatus -> handleDeviceStatus(message)
+            is PlaybackData -> handlePlaybackData(context, message, sendMessage)
+        }
+    }
 
-    override fun handleClipboardMessage(clipboardMessage: ClipboardMessage) {
+    private fun handleClipboardMessage(context: Context, clipboardMessage: ClipboardMessage) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("Copied Text", clipboardMessage.content)
         clipboard.setPrimaryClip(clip)
-        Log.d("ClipboardMessage", "Copied to clipboard: ${clipboardMessage.content}")
     }
 
-    override fun handlePlaybackData(playbackData: PlaybackData) {
-        mediaController(context, playbackData)
+    private fun handlePlaybackData(
+        context: Context,
+        playbackData: PlaybackData,
+        sendMessage: suspend (SocketMessage) -> Unit
+    ) {
+        CoroutineScope(Dispatchers.Main).launch {
+            mediaController(
+                context,
+                playbackData,
+                sendMessage
+            )
+        }
     }
 
-    override fun handleDeviceStatus(deviceStatus: DeviceStatus) {
+    private fun handleDeviceStatus(deviceStatus: DeviceStatus) {
         TODO("Not yet implemented")
     }
 
-    override fun handleResponse(response: Response) {
+    private fun handleResponse(response: Response) {
         Log.d(response.resType, response.content)
     }
 
-    override fun handleNotificationMessage(notificationMessage: NotificationMessage) {
-        // Handle notification message
+    private fun handleNotificationMessage(notificationMessage: NotificationMessage) {
+        TODO("Not yet implemented")
     }
 
-    override fun handleDeviceInfo(deviceInfo: DeviceInfo) {
-        // Handle notification message
+    private fun handleDeviceInfo(deviceInfo: DeviceInfo) {
+        TODO("Not yet implemented")
     }
 }
 

@@ -7,12 +7,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import komu.seki.data.repository.MessageHandlerImpl
 import komu.seki.data.repository.PreferencesDatastore
 import komu.seki.data.services.NsdService
-import komu.seki.data.services.WebSocketClient
 import komu.seki.data.repository.WebSocketRepositoryImpl
-import komu.seki.domain.repository.MessageHandler
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineName
@@ -28,13 +25,6 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providesPreferencesRepository(
-        application: Application
-    ): PreferencesRepository = PreferencesDatastore(context = application)
-
-
-    @Provides
-    @Singleton
     fun provideAppCoroutineScope(): AppCoroutineScope {
         return object : AppCoroutineScope {
             override val coroutineContext =
@@ -44,20 +34,19 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providesMessageHandler(
+    fun providesPreferencesRepository(
         application: Application
-    ): MessageHandler = MessageHandlerImpl(context = application)
+    ): PreferencesRepository = PreferencesDatastore(context = application)
 
 
     @Provides
     @Singleton
-    fun providesWebSocketClient(messageHandler: MessageHandler): WebSocketClient = WebSocketClient(messageHandler)
+    fun provideWebSocketRepository(
+        application: Application
+    ): WebSocketRepository {
+        return WebSocketRepositoryImpl(application)
+    }
 
-    @Provides
-    @Singleton
-    fun providesWebSocketRepository(
-        webSocketClient: WebSocketClient
-    ): WebSocketRepository = WebSocketRepositoryImpl(webSocketClient)
 
     @Provides
     @Singleton

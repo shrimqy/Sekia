@@ -1,11 +1,19 @@
 package komu.seki.domain.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 enum class NotificationType {
     ACTIVE,
     NEW
+}
+enum class MediaAction {
+    RESUME,
+    PAUSE,
+    NEXT_QUEUE,
+    PREV_QUEUE
 }
 
 @Serializable
@@ -61,16 +69,18 @@ data class DeviceStatus(
     val bluetoothStatus: Boolean?,
 ) : SocketMessage()
 
+@Parcelize
 @Serializable
 @SerialName("5")
 data class PlaybackData(
     val appName: String?,
     val trackTitle: String,
     val artist: String?,
-    val thumbnail: String?,
     val volume: Double?,
-    val isPlaying: Boolean
-) : SocketMessage()
+    var isPlaying: Boolean,
+    var mediaAction: MediaAction?,
+    val thumbnail: String?
+) : SocketMessage(), Parcelable
 
 
 
