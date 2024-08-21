@@ -7,6 +7,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.Base64
 import android.util.Log
+import androidx.core.graphics.drawable.IconCompat
 import java.io.ByteArrayOutputStream
 
 fun bitmapToBase64(bitmap: Bitmap): String {
@@ -29,12 +30,22 @@ fun drawableToBitmap(drawable: Drawable): Bitmap {
     return bitmap
 }
 
-fun base64ToBitmap(base64String: String): Bitmap? {
+fun base64ToBitmap(base64String: String?): Bitmap? {
     return try {
         val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
         BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
     } catch (e: Exception) {
         Log.e("MessageHandler", "Error decoding base64 thumbnail", e)
+        null
+    }
+}
+
+fun base64ToIconCompat(base64String: String?): IconCompat? {
+    val bitmap = base64ToBitmap(base64String)
+    return if (bitmap != null) {
+        IconCompat.createWithBitmap(bitmap)
+    }
+    else {
         null
     }
 }
