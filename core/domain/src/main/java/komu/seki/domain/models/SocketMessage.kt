@@ -16,6 +16,14 @@ enum class MediaAction {
     PREV_QUEUE
 }
 
+enum class CommandType {
+    HTTP_CONNECT,
+    LOCK,
+    SHUTDOWN,
+    SLEEP,
+    HIBERNATE,
+}
+
 @Serializable
 sealed class SocketMessage
 
@@ -79,8 +87,15 @@ data class PlaybackData(
     val volume: Double?,
     var isPlaying: Boolean,
     var mediaAction: MediaAction?,
-    val thumbnail: String?
+    val thumbnail: String?,
+    val appIcon: String?
 ) : SocketMessage(), Parcelable
+
+@Serializable
+@SerialName("6")
+data class Command(
+    val commandType: CommandType
+) : SocketMessage()
 
 
 
