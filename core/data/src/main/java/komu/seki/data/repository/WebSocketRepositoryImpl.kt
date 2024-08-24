@@ -13,6 +13,8 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
+import komu.seki.domain.models.FileTransfer
+import komu.seki.domain.models.FileTransferContent
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
@@ -35,7 +37,9 @@ class WebSocketRepositoryImpl @Inject constructor(
     private lateinit var messageHandler: MessageHandler
 
     private val client = HttpClient(CIO) {
-        install(WebSockets)
+        install(WebSockets){
+            maxFrameSize = Long.MAX_VALUE
+        }
     }
 
     private val json = Json {
@@ -98,8 +102,15 @@ class WebSocketRepositoryImpl @Inject constructor(
 
     override suspend fun sendMessage(message: SocketMessage) {
         try {
-            session?.send(Frame.Text(json.encodeToString(message)))
-//            Log.d("WebSocketClient", "Message sent: $message")
+            when (message) {
+                is FileTransferContent -> {
+                    session?.send(Frame.Binary(true, message.data))
+                }
+                else -> {
+                    // For other messages, send as JSON text
+                    session?.send(Frame.Text(json.encodeToString(message)))
+                }
+            }
         } catch (e: Exception) {
             Log.e("WebSocketClient", "Failed to send message", e)
         }
