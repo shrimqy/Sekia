@@ -36,7 +36,7 @@
         </activity>
 
         <activity
-            android:name=".ui.shortcut.ShareToPc"
+            android:name=".ui.deeplink.ShareToPc"
             android:exported="true"
             android:label="Share to PC"
             android:launchMode="singleTask"
@@ -68,6 +68,7 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+        <service android:name=".services.FileTransferService" android:foregroundServiceType="dataSync" />
         <receiver
             android:exported="false"
             android:name=".services.NotificationService$ActiveNotificationsBroadcastReceiver">
