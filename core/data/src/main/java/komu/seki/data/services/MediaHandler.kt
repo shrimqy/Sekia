@@ -8,11 +8,12 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 import komu.seki.common.util.base64ToBitmap
+import komu.seki.common.util.base64ToIconCompat
 import komu.seki.domain.models.MediaAction
 import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.SocketMessage
-import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,7 +23,8 @@ fun mediaController(
     playbackData: PlaybackData,
     sendMessage: suspend (SocketMessage) -> Unit
 ) {
-    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val notificationId = 5941
 
     // Get the existing or new MediaSession
@@ -32,7 +34,9 @@ fun mediaController(
         MediaMetadataCompat.Builder()
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, playbackData.trackTitle)
             .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, playbackData.artist)
-            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, playbackData.thumbnail?.let { base64ToBitmap(it) })
+            .putBitmap(
+                MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+                playbackData.thumbnail?.let { base64ToBitmap(it) })
             .build()
     )
 
@@ -74,7 +78,13 @@ fun mediaController(
 
     // Create or update the notification
     val notification = NotificationCompat.Builder(context, "playback_channel")
-        .setSmallIcon(android.R.drawable.ic_media_play)
+        .setSmallIcon(
+            base64ToIconCompat(playbackData.appIcon)
+                ?: IconCompat.createWithResource(
+                    context,
+                    com.komu.seki.core.common.R.drawable.ic_splash
+                )
+        )
         .setContentTitle(playbackData.trackTitle)
         .setContentText(playbackData.artist)
         .setLargeIcon(playbackData.thumbnail?.let { base64ToBitmap(it) })
@@ -92,7 +102,6 @@ fun mediaController(
 
     Log.d("PlaybackData", "Notification updated for playback: ${playbackData.trackTitle}")
 }
-
 
 
 fun handleMediaAction(

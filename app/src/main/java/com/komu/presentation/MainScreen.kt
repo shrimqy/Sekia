@@ -9,6 +9,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
@@ -16,16 +17,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.komu.presentation.home.HomeViewModel
 import com.komu.sekia.R
 import com.komu.sekia.navigation.MainRouteScreen
 import com.komu.sekia.navigation.graphs.MainNavGraph
 import komu.seki.presentation.components.AppTopBar
 import komu.seki.presentation.components.NavBar
 import komu.seki.presentation.components.NavigationItem
+import komu.seki.presentation.components.PullRefresh
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -69,60 +74,74 @@ fun MainScreen(
                 backStackState?.destination?.route == MainRouteScreen.SettingsScreen.route
     }
 
+    val isPullRefreshEnabled = remember(key1 = backStackState) {
+        backStackState?.destination?.route == MainRouteScreen.HomeScreen.route
+    }
 
+    val viewModel: HomeViewModel = hiltViewModel()
+    val deviceDetails by viewModel.deviceDetails.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val context = LocalContext.current
 
-    Scaffold (modifier = Modifier.fillMaxSize(),
-        topBar = {
-            if (isBarVisible) {
-                AppTopBar(
-                    items = navigationItem,
-                    selectedItem = selectedItem,
-                )
-            }
-        },
-        bottomBar = {
-            if (isBarVisible) {
-                val bottomNavVisible by produceState(initialValue = true) {
-                    showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
-                }
-                AnimatedVisibility(
-                    visible = bottomNavVisible,
-                    enter = expandVertically(),
-                    exit = shrinkVertically(),
-                ) {
-                    NavBar(
+    PullRefresh(
+        refreshing = isRefreshing,
+        enabled = isPullRefreshEnabled,
+        onRefresh = { deviceDetails?.hostAddress?.let { viewModel.toggleSync(context, false, hostAddress = it) } }
+    ) {
+        Scaffold (modifier = Modifier.fillMaxSize(),
+            topBar = {
+                if (isBarVisible) {
+                    AppTopBar(
                         items = navigationItem,
                         selectedItem = selectedItem,
-                        onItemClick = { index ->
-                            when (index) {
-                                0 -> navigateToTab(
-                                    navController = homeNavController,
-                                    route = MainRouteScreen.HomeScreen.route
-                                )
-
-                                1 -> navigateToTab(
-                                    navController = homeNavController,
-                                    route = MainRouteScreen.DevicesScreen.route
-                                )
-
-                                2 -> navigateToTab(
-                                    navController = homeNavController,
-                                    route = MainRouteScreen.SettingsScreen.route
-                                )
-                            }
-                        }
                     )
                 }
+            },
+            bottomBar = {
+                if (isBarVisible) {
+                    val bottomNavVisible by produceState(initialValue = true) {
+                        showBottomNavEvent.receiveAsFlow().collectLatest { value = it }
+                    }
+                    AnimatedVisibility(
+                        visible = bottomNavVisible,
+                        enter = expandVertically(),
+                        exit = shrinkVertically(),
+                    ) {
+                        NavBar(
+                            items = navigationItem,
+                            selectedItem = selectedItem,
+                            onItemClick = { index ->
+                                when (index) {
+                                    0 -> navigateToTab(
+                                        navController = homeNavController,
+                                        route = MainRouteScreen.HomeScreen.route
+                                    )
 
+                                    1 -> navigateToTab(
+                                        navController = homeNavController,
+                                        route = MainRouteScreen.DevicesScreen.route
+                                    )
+
+                                    2 -> navigateToTab(
+                                        navController = homeNavController,
+                                        route = MainRouteScreen.SettingsScreen.route
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                }
             }
+        ) { innerPadding ->
+            MainNavGraph(
+                rootNavController = rootNavController,
+                homeNavController = homeNavController,
+                innerPadding = innerPadding
+            )
         }
-    ) { innerPadding ->
-        MainNavGraph(
-            rootNavController = rootNavController,
-            homeNavController = homeNavController,
-            innerPadding = innerPadding
-        )
     }
+
 }
 
 private fun navigateToTab(navController: NavController, route: String) {
