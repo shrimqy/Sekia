@@ -13,11 +13,11 @@ import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
-import komu.seki.domain.models.FileTransfer
 import komu.seki.domain.models.FileTransferContent
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
+import komu.seki.domain.repository.PlaybackRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +31,8 @@ import kotlinx.serialization.modules.subclass
 import javax.inject.Inject
 
 class WebSocketRepositoryImpl @Inject constructor(
-    val context: Context
+    val context: Context,
+    private val playbackRepository: PlaybackRepository
 ) : WebSocketRepository {
 
     private lateinit var messageHandler: MessageHandler
@@ -69,7 +70,7 @@ class WebSocketRepositoryImpl @Inject constructor(
                 }
                 Log.d("socket", "Client Connected to $host")
                 sendMessage(deviceInfo)
-                messageHandler = MessageHandler(::sendMessage)
+                messageHandler = MessageHandler(::sendMessage, playbackRepository)
                 return true  // Exit the function if connection is successful
             } catch (e: Exception) {
                 Log.d("connectionError", "Failed to connect to $host")

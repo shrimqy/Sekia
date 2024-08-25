@@ -112,6 +112,7 @@ class WebSocketService : Service() {
     }
     private var isConnected by mutableStateOf(false)
     private fun start(hostAddress: String) {
+        onCreate()
         scope.launch {
             try {
                 val deviceInfo = getDeviceInfo(context)
@@ -262,7 +263,6 @@ class WebSocketService : Service() {
         scope.launch {
             preferencesRepository.saveSynStatus(false)
         }
-        super.onDestroy()
         scope.cancel()
         isForegroundStarted = false
     }
