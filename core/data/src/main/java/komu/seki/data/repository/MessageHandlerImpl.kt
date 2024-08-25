@@ -14,13 +14,15 @@ import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
+import komu.seki.domain.repository.PlaybackRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.internal.throwMissingFieldException
-import okhttp3.internal.ignoreIoExceptions
 
-class MessageHandler (private val sendMessage: suspend (SocketMessage) -> Unit) {
+class MessageHandler(
+    private val sendMessage: suspend (SocketMessage) -> Unit,
+    private val playbackRepository: PlaybackRepository
+) {
     fun handleMessages(context: Context, message: SocketMessage) {
         when (message) {
             is Response -> handleResponse(message)
@@ -57,6 +59,7 @@ class MessageHandler (private val sendMessage: suspend (SocketMessage) -> Unit) 
         playbackData: PlaybackData,
         sendMessage: suspend (SocketMessage) -> Unit
     ) {
+        playbackRepository.updatePlaybackData(playbackData)
         CoroutineScope(Dispatchers.Main).launch {
             mediaController(
                 context,

@@ -7,9 +7,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import komu.seki.data.repository.PlaybackRepositoryImpl
 import komu.seki.data.repository.PreferencesDatastore
 import komu.seki.data.services.NsdService
 import komu.seki.data.repository.WebSocketRepositoryImpl
+import komu.seki.domain.repository.PlaybackRepository
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineName
@@ -38,13 +40,20 @@ object AppModule {
         application: Application
     ): PreferencesRepository = PreferencesDatastore(context = application)
 
+    @Provides
+    @Singleton
+    fun providedPlaybackRepository(): PlaybackRepository {
+        return PlaybackRepositoryImpl()
+    }
+
 
     @Provides
     @Singleton
     fun provideWebSocketRepository(
-        application: Application
+        application: Application,
+        playbackRepository: PlaybackRepository
     ): WebSocketRepository {
-        return WebSocketRepositoryImpl(application)
+        return WebSocketRepositoryImpl(application, playbackRepository)
     }
 
 
