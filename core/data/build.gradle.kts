@@ -39,6 +39,12 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
 
+    // Room components
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    androidTestImplementation(libs.androidx.room.testing)
+
     implementation(libs.bundles.ktor)
     implementation(libs.core.ktx)
     implementation(libs.androidx.appcompat)
