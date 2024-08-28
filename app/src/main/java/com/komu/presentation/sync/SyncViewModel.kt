@@ -1,22 +1,24 @@
 package com.komu.presentation.sync
 
+import android.content.Context
+import android.content.Intent
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.komu.sekia.services.Actions
+import com.komu.sekia.services.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import komu.seki.domain.models.ClipboardMessage
-import komu.seki.domain.models.NotificationMessage
-import komu.seki.domain.models.Response
+import komu.seki.data.database.Device
 import komu.seki.domain.models.SocketMessage
-import komu.seki.data.network.NsdService
-import komu.seki.data.network.WebSocketClient
+import komu.seki.data.services.NsdService
+import komu.seki.data.repository.WebSocketRepositoryImpl
+import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
@@ -24,9 +26,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class SyncViewModel @Inject constructor(
-    private val webWebSocketClient: WebSocketClient,
     private val nsdService: NsdService,
-    private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<SocketMessage>>(emptyList())
@@ -40,7 +40,7 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             nsdService.startDiscovery()
             delay(1.seconds)
-            stopDiscovery()
+            nsdService.stopDiscovery()
         }
     }
 
@@ -50,22 +50,16 @@ class SyncViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
 
-    fun saveDevice(serviceInfo: NsdServiceInfo) {
+    fun saveDevice(context: Context, serviceInfo: NsdServiceInfo) {
         viewModelScope.launch {
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                    val hostAddress = serviceInfo.hostAddresses.toString()
-                    preferencesRepository.saveDeviceDetails(
-                        deviceName = serviceInfo.serviceName,
-                        hostAddress = hostAddress,
-                    )
-                    Log.d(TAG, "Service details saved: ${serviceInfo.serviceName}, ${hostAddress}, ${serviceInfo.port}")
-                } else {
-                    preferencesRepository.saveDeviceDetails(
-                        deviceName = serviceInfo.serviceName,
-                        hostAddress = serviceInfo.host.hostAddress!!,
-                    )
+                val hostAddress = String(serviceInfo.attributes["ipAddress"]!!, Charsets.UTF_8)
+                val intent = Intent(context, WebSocketService::class.java).apply {
+                    action = Actions.START.name
+                    putExtra(WebSocketService.NEW_DEVICE, true)
+                    putExtra(WebSocketService.EXTRA_HOST_ADDRESS, hostAddress)
                 }
+                context.startService(intent)
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving to service: ${e.message}", e)
             }

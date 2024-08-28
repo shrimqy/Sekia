@@ -86,7 +86,7 @@ fun MainScreen(
     PullRefresh(
         refreshing = isRefreshing,
         enabled = isPullRefreshEnabled,
-        onRefresh = { deviceDetails?.hostAddress?.let { viewModel.toggleSync(context, false, hostAddress = it) } }
+        onRefresh = { viewModel.toggleSync(context, false) }
     ) {
         Scaffold (modifier = Modifier.fillMaxSize(),
             topBar = {

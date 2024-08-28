@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.util.Log
+import komu.seki.data.database.Device
 import komu.seki.data.services.mediaController
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.Command
@@ -15,13 +16,16 @@ import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PlaybackRepository
+import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MessageHandler(
     private val sendMessage: suspend (SocketMessage) -> Unit,
-    private val playbackRepository: PlaybackRepository
+    private val playbackRepository: PlaybackRepository,
+    private val appRepository: AppRepository,
+    private val lastConnected: String,
 ) {
     fun handleMessages(context: Context, message: SocketMessage) {
         when (message) {
@@ -82,7 +86,10 @@ class MessageHandler(
     }
 
     private fun handleDeviceInfo(deviceInfo: DeviceInfo) {
-        TODO("Not yet implemented")
+        CoroutineScope(Dispatchers.Main).launch {
+            Log.d("deviceInfo", deviceInfo.deviceName)
+            appRepository.addDevice(Device(deviceName = deviceInfo.deviceName, avatar = deviceInfo.userAvatar, ipAddress = lastConnected))
+        }
     }
 }
 

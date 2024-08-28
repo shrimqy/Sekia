@@ -15,6 +15,7 @@ import android.content.IntentFilter
 import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.provider.Settings.Global
 import android.provider.Settings.Secure
@@ -27,6 +28,8 @@ import androidx.core.app.NotificationCompat.EXTRA_NOTIFICATION_ID
 import com.komu.sekia.MainActivity
 import com.komu.sekia.R
 import dagger.hilt.android.AndroidEntryPoint
+import komu.seki.data.database.Device
+import komu.seki.data.repository.AppRepository
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.SocketMessage
@@ -49,11 +52,18 @@ class WebSocketService : Service() {
     lateinit var preferencesRepository: PreferencesRepository
 
     @Inject
+    lateinit var appRepository: AppRepository
+
+    @Inject
     lateinit var context: Context
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val binder = LocalBinder()
-    private var isForegroundStarted = false // Flag to track if foreground has been started
+
+    private var isForegroundStarted = false
+    private var isConnected by mutableStateOf(false)
+
+    private var lastBatteryLevel: Int? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): WebSocketService = this@WebSocketService
@@ -88,37 +98,34 @@ class WebSocketService : Service() {
         registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         registerReceiver(wifiReceiver, IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION))
         registerReceiver(bluetoothReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
-
-
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("WebSocketService", "onStartCommand called")
-        val hostAddress = intent?.getStringExtra(EXTRA_HOST_ADDRESS)
-        Log.d("WebSocketService", "Received hostAddress: $hostAddress")
-        Log.d("WebSocketService", "Received action: ${intent?.action}")
-        when (intent?.action) {
-            Actions.START.name -> {
-                Log.d("WebSocketService", "START action received")
-                hostAddress?.let { start(it) } ?: Log.e("WebSocketService", "hostAddress is null")
-            }
-            Actions.STOP.name -> {
-                Log.d("WebSocketService", "STOP action received")
-                stop()
-            }
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        val hostAddress = intent.getStringExtra(EXTRA_HOST_ADDRESS)
+        val newDevice = intent.getBooleanExtra(NEW_DEVICE, false)
+        Log.d("WebSocketService", "Received hostAddress: $hostAddress new Device: $newDevice")
+        Log.d("WebSocketService", "Received action: ${intent.action}")
+        when (intent.action) {
+            Actions.START.name -> start(hostAddress!!, newDevice)
+            Actions.STOP.name -> stop()
             else -> Log.d("WebSocketService", "Unknown action received")
         }
         return START_NOT_STICKY
     }
-    private var isConnected by mutableStateOf(false)
-    private fun start(hostAddress: String) {
+
+
+
+    private fun start(hostAddress: String, newDevice: Boolean) {
         onCreate()
         scope.launch {
             try {
-                val deviceInfo = getDeviceInfo(context)
                 val deviceStatus = getDeviceStatus(context)
-                Log.d("service", "trying to connect")
-                isConnected = connect(hostAddress, deviceInfo)
+                if (newDevice) {
+                    val deviceInfo = getDeviceInfo(context)
+                    isConnected = connect(hostAddress, deviceInfo)
+                } else {
+                    isConnected = connect(hostAddress)
+                }
                 if (isConnected) {
                     startListening()
                     preferencesRepository.saveSynStatus(true)
@@ -129,12 +136,9 @@ class WebSocketService : Service() {
                     Log.d("service", deviceStatus.toString())
                     sendMessage(deviceStatus)
                     sendActiveNotifications()
-                } else {
-                    delay(5000)
                 }
             } catch (e: Exception) {
                 Log.e("WebSocketService", "Error in WebSocket connection", e)
-                delay(5000) // Wait before retrying
             }
         }
     }
@@ -144,7 +148,12 @@ class WebSocketService : Service() {
             try {
                 val deviceStatus = getDeviceStatus(context)
                 val currentBatteryLevel = deviceStatus.batteryStatus
-                webSocketRepository.sendMessage(deviceStatus)
+
+                // Only send the status if the battery level has changed
+                if (currentBatteryLevel != lastBatteryLevel) {
+                    lastBatteryLevel = currentBatteryLevel
+                    webSocketRepository.sendMessage(deviceStatus)
+                }
             } catch (e: Exception) {
                 Log.e("WebSocketService", "Failed to send device status", e)
             }
@@ -161,7 +170,7 @@ class WebSocketService : Service() {
         }
     }
 
-    private suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo): Boolean {
+    private suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo? = null): Boolean {
         return webSocketRepository.connect(hostAddress, deviceInfo)
     }
 
@@ -169,10 +178,11 @@ class WebSocketService : Service() {
     @SuppressLint("HardwareIds")
     private fun getDeviceInfo(context: Context): DeviceInfo {
         val deviceName = Global.getString(context.contentResolver, "device_name")
-        val androidId = Secure.getString(context.contentResolver, Secure.ANDROID_ID)
+//        val androidId = Secure.getString(context.contentResolver, Secure.ANDROID_ID)
         return DeviceInfo(
-            id = androidId,
-            deviceName = deviceName
+//            id = androidId,
+            deviceName = deviceName,
+            userAvatar = null,
         )
     }
 
@@ -185,7 +195,6 @@ class WebSocketService : Service() {
                 context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
                     ?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) == BatteryManager.BATTERY_STATUS_CHARGING
 
-        Log.d("charging", isCharging.toString())
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifi = wifiManager.isWifiEnabled
 
@@ -270,6 +279,7 @@ class WebSocketService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1
         const val EXTRA_HOST_ADDRESS = "extra_host_address"
+        const val NEW_DEVICE = "new_device"
         const val ACTION_SEND_ACTIVE_NOTIFICATIONS = "com.komu.sekia.services.NotificationService.SEND_ACTIVE_NOTIFICATIONS"
     }
 

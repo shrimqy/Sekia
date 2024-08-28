@@ -71,8 +71,8 @@ data class NotificationAction(
 @Serializable
 @SerialName("3")
 data class DeviceInfo(
-    val id: String,
-    val deviceName: String?,
+    val deviceName: String,
+    val userAvatar: String? = null,
 ) : SocketMessage()
 
 @Serializable

@@ -18,6 +18,7 @@ import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PlaybackRepository
+import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +33,9 @@ import javax.inject.Inject
 
 class WebSocketRepositoryImpl @Inject constructor(
     val context: Context,
-    private val playbackRepository: PlaybackRepository
+    private val playbackRepository: PlaybackRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val appRepository: AppRepository
 ) : WebSocketRepository {
 
     private lateinit var messageHandler: MessageHandler
@@ -58,26 +61,24 @@ class WebSocketRepositoryImpl @Inject constructor(
     private var session: WebSocketSession? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    override suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo): Boolean {
-        val ipRegex = Regex("""\b(?:\d{1,3}\.){3}\d{1,3}\b""")  // Find all valid IP addresses in the string
-        val hosts = ipRegex.findAll(hostAddress).map { it.value }.toList()
-
-        for (host in hosts) {
-            try {
-                val port = 5149
-                session = client.webSocketSession {
-                    url("ws://$host:$port")
-                }
-                Log.d("socket", "Client Connected to $host")
-                sendMessage(deviceInfo)
-                messageHandler = MessageHandler(::sendMessage, playbackRepository)
-                return true  // Exit the function if connection is successful
-            } catch (e: Exception) {
-                Log.d("connectionError", "Failed to connect to $host")
-                e.printStackTrace()
+    override suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo?): Boolean {
+        try {
+            val port = 5149
+            session = client.webSocketSession {
+                url("ws://$hostAddress:$port")
             }
+            Log.d("socket", "Client Connected to $hostAddress")
+            if (deviceInfo != null) {
+                Log.d("message", "sending deviceInfo $deviceInfo")
+                sendMessage(deviceInfo)
+            }
+            preferencesRepository.saveLastConnected(hostAddress)
+            messageHandler = MessageHandler(::sendMessage, playbackRepository, appRepository, hostAddress)
+            return true
+        } catch (e: Exception) {
+            Log.d("connectionError", "Failed to connect to $hostAddress")
+            e.printStackTrace()
         }
-        Log.d("connectionError", "Failed to connect to any host")
         return false
     }
 

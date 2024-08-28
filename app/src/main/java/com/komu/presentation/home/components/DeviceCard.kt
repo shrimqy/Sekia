@@ -1,6 +1,5 @@
 package com.komu.presentation.home.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,32 +16,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Battery2Bar
-import androidx.compose.material.icons.rounded.Devices
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.SyncDisabled
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import komu.seki.domain.models.DeviceDetails
+import komu.seki.common.util.base64ToBitmap
+import komu.seki.data.database.Device
 
 @Composable
 fun DeviceCard(
     modifier: Modifier = Modifier,
-    deviceDetails: DeviceDetails?,
+    device: Device?,
     syncStatus: Boolean,
     onSyncAction: () -> Unit,
     batteryLevel: Int? = null,
@@ -55,13 +50,13 @@ fun DeviceCard(
     ) {
         Box(
             Modifier.padding(16.dp)) {
-            deviceDetails?.let { device ->
+            device?.let { device ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Circular profile picture
                     Image(
-                        painter = rememberAsyncImagePainter(model = null),
+                        painter = rememberAsyncImagePainter(model = base64ToBitmap(device.avatar)),
                         contentDescription = "Profile Picture",
                         modifier = Modifier
                             .size(56.dp)
@@ -77,14 +72,12 @@ fun DeviceCard(
                     Column(
                         verticalArrangement = Arrangement.Center
                     ) {
-                            device.deviceName?.let {
-                                Text(
-                                    text = it,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            }
+                            Text(
+                                text = device.deviceName,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                             Row {
                                 batteryLevel?.let { level ->
                                     Icon(

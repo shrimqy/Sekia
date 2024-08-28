@@ -19,7 +19,7 @@ import com.komu.sekia.services.Actions
 import com.komu.sekia.services.NotificationService
 import com.komu.sekia.services.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import komu.seki.domain.models.DeviceDetails
+import komu.seki.data.database.Device
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.delay
@@ -43,23 +43,18 @@ class MainViewModel @Inject constructor(
     var startDestination by mutableStateOf(Graph.MainScreenGraph)
         private set
 
-    private val _deviceDetails = MutableStateFlow<DeviceDetails?>(null)
-    private val deviceDetails: StateFlow<DeviceDetails?> = _deviceDetails.asStateFlow()
+    private val _hostAddress = MutableStateFlow<String?>(null)
+    private val hostAddress: StateFlow<String?> = _hostAddress.asStateFlow()
 
     fun startWebSocketService(context: Context) {
         viewModelScope.launch {
-            deviceDetails.filterNotNull().first().let { details ->
-                val hostAddress = details.hostAddress
-                if (hostAddress != null) {
-                    Intent(context, WebSocketService::class.java).also { intent ->
-                        intent.action = Actions.START.name
-                        intent.putExtra(WebSocketService.EXTRA_HOST_ADDRESS, hostAddress)
-                        context.startForegroundService(intent)
-                    }
-                    Log.d("MainViewModel", "Starting WebSocket service with host: $hostAddress")
-                } else {
-                    Log.e("MainViewModel", "Host address is null, cannot start WebSocket service")
+            hostAddress.filterNotNull().first().let {
+                Intent(context, WebSocketService::class.java).also { intent ->
+                    intent.action = Actions.START.name
+                    intent.putExtra(WebSocketService.EXTRA_HOST_ADDRESS, it)
+                    context.startForegroundService(intent)
                 }
+                Log.d("MainViewModel", "Starting WebSocket service with host: $hostAddress")
             }
         }
     }
@@ -68,15 +63,15 @@ class MainViewModel @Inject constructor(
         Log.d("MainViewModel", "ViewModel initialized")
         viewModelScope.launch {
 
-            preferencesRepository.readDeviceDetails()?.collectLatest { device ->
-                Log.d("MainViewModel", "Onboarding status: $device")
-                startDestination = if (device.hostAddress != null) {
+            preferencesRepository.readLastConnected().collectLatest { hostAddress ->
+                Log.d("MainViewModel", "last used hostAddress: $hostAddress")
+                startDestination = if (hostAddress != null) {
                     Graph.MainScreenGraph
                 } else {
                     Graph.SyncGraph
                 }
                 delay(150)
-                _deviceDetails.value = device
+                _hostAddress.value = hostAddress
                 splashCondition = false
             }
         }

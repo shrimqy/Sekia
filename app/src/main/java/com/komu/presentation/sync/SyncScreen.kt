@@ -1,6 +1,7 @@
 package com.komu.presentation.sync
 
 import android.Manifest
+import android.content.Context
 import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.util.Log
@@ -26,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.komu.presentation.sync.components.DeviceItem
@@ -51,6 +53,8 @@ fun SyncScreen(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = {}
     )
+
+    val context = LocalContext.current
 
     PullRefresh(
         refreshing = isRefreshing,
@@ -106,7 +110,7 @@ fun SyncScreen(
                             }
                         }
                         Log.d("Service", "Connecting to service: ${selectedService.value}")
-                        viewModel.saveDevice(selectedService.value!!)
+                        viewModel.saveDevice(context, selectedService.value!!)
                         showDialog.value = false
                     }
                 ) {

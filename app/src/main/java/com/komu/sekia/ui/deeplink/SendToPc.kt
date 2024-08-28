@@ -8,7 +8,6 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.widget.Toast
-import com.komu.sekia.services.FileTransferService
 import com.komu.sekia.ui.base.BaseActivity
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.common.models.FileMetadata
