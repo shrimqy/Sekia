@@ -7,6 +7,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import komu.seki.data.database.AppDatabase
+import komu.seki.data.repository.AppRepository
 import komu.seki.data.repository.PlaybackRepositoryImpl
 import komu.seki.data.repository.PreferencesDatastore
 import komu.seki.data.services.NsdService
@@ -51,9 +53,11 @@ object AppModule {
     @Singleton
     fun provideWebSocketRepository(
         application: Application,
-        playbackRepository: PlaybackRepository
+        playbackRepository: PlaybackRepository,
+        preferencesRepository: PreferencesRepository,
+        appRepository: AppRepository
     ): WebSocketRepository {
-        return WebSocketRepositoryImpl(application, playbackRepository)
+        return WebSocketRepositoryImpl(application, playbackRepository, preferencesRepository, appRepository)
     }
 
 
