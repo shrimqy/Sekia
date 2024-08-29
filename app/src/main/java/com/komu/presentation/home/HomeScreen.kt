@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.komu.presentation.home.components.DeviceCard
 import com.komu.presentation.home.components.MediaPlaybackCard
+import com.komu.presentation.home.components.VolumeSlider
 
 @Composable
 fun HomeScreen(
@@ -54,10 +55,14 @@ fun HomeScreen(
         item(key = "media_playback") {
             MediaPlaybackCard(
                 playbackData = playbackData,
-                onPlayPauseClick = { /* Handle Play/Pause */ },
-                onSkipNextClick = { /* Handle Skip Next */ },
-                onSkipPreviousClick = { /* Handle Skip Previous */ }
+                onPlayPauseClick = { viewModel.onPlayPause() },
+                onSkipNextClick = { viewModel.onNext() },
+                onSkipPreviousClick = { viewModel.onPrevious() }
             )
+        }
+
+        item(key = "volume_slider") {
+            playbackData?.volume?.let { VolumeSlider(initialVolume = it, onVolumeChange = { }) }
         }
     }
 }
