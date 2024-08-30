@@ -17,6 +17,8 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Base64
 import android.util.Log
+import com.komu.sekia.services.WebSocketService.Companion.ACTION_SEND_ACTIVE_NOTIFICATIONS
+import com.komu.sekia.services.WebSocketService.Companion.ACTION_STOP_NOTIFICATION_SERVICE
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.common.util.bitmapToBase64
 import komu.seki.common.util.drawableToBitmap
@@ -43,7 +45,7 @@ class NotificationService : NotificationListenerService() {
     class ActiveNotificationsBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
-                WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS -> {
+                ACTION_SEND_ACTIVE_NOTIFICATIONS -> {
                     val service = context as? NotificationService
                     service?.sendActiveNotifications()
                 }
@@ -56,11 +58,11 @@ class NotificationService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         Log.d("NotificationService", "Service created")
-        val filter = IntentFilter(WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS)
+        val filter = IntentFilter(ACTION_SEND_ACTIVE_NOTIFICATIONS)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(broadcastReceiver, filter, RECEIVER_NOT_EXPORTED)
         } else {
-            val intent = Intent(WebSocketService.ACTION_SEND_ACTIVE_NOTIFICATIONS)
+            val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS)
             intent.setClassName(this, "com.komu.sekia.services.NotificationService\$ActiveNotificationsBroadcastReceiver")
             sendBroadcast(intent)
         }

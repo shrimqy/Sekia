@@ -1,9 +1,16 @@
 package komu.seki.data.repository
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.timeout
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.url
@@ -11,6 +18,8 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
+import komu.seki.common.util.getWifiSSid
+import komu.seki.data.database.Network
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.FileTransferContent
@@ -73,6 +82,7 @@ class WebSocketRepositoryImpl @Inject constructor(
                 sendMessage(deviceInfo)
             }
             preferencesRepository.saveLastConnected(hostAddress)
+            preferencesRepository.saveSynStatus(true)
             messageHandler = MessageHandler(::sendMessage, playbackRepository, appRepository, hostAddress)
             return true
         } catch (e: Exception) {
