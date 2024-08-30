@@ -14,10 +14,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import komu.seki.data.database.Device
 import komu.seki.data.repository.AppRepository
 import komu.seki.data.repository.PlaybackRepositoryImpl
+import komu.seki.data.services.handleMediaAction
+import komu.seki.data.services.mediaController
 import komu.seki.domain.models.DeviceInfo
+import komu.seki.domain.models.MediaAction
 import komu.seki.domain.models.PlaybackData
+import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PlaybackRepository
 import komu.seki.domain.repository.PreferencesRepository
+import komu.seki.domain.repository.WebSocketRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +42,7 @@ import kotlin.time.Duration.Companion.seconds
 class HomeViewModel @Inject constructor(
     preferencesRepository: PreferencesRepository,
     playbackRepository: PlaybackRepository,
+    val webSocketRepository: WebSocketRepository,
     private val appScope: AppCoroutineScope,
     appRepository: AppRepository,
     application: Application
@@ -92,14 +99,27 @@ class HomeViewModel @Inject constructor(
 
     // Handle play/pause, next, previous actions
     fun onPlayPause() {
-        // Implement play/pause toggle logic
+        val action: MediaAction = if (playbackData.value?.isPlaying == true) MediaAction.PAUSE else MediaAction.RESUME
+        sendPlaybackData(playbackData.value!!, action)
     }
 
     fun onNext() {
-        // Implement next track logic
+        sendPlaybackData(playbackData.value!!, MediaAction.NEXT_QUEUE)
     }
 
     fun onPrevious() {
-        // Implement previous track logic
+        sendPlaybackData(playbackData.value!!, MediaAction.PREV_QUEUE)
+    }
+
+    private fun sendPlaybackData(playbackData: PlaybackData, mediaAction: MediaAction) {
+        playbackData.mediaAction = mediaAction
+        CoroutineScope(Dispatchers.IO).launch {
+            sendMessage(playbackData)
+        }
+        Log.d("MediaSession", "Action received: $mediaAction" + playbackData.trackTitle)
+    }
+
+    private suspend fun sendMessage(message: SocketMessage) {
+        webSocketRepository.sendMessage(message)
     }
 }
