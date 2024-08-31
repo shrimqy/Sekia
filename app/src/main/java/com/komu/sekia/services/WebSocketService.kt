@@ -85,6 +85,9 @@ class WebSocketService : Service() {
         super.onCreate()
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         registerReceivers()
+        scope.launch {
+            preferencesRepository.saveSynStatus(isConnected)
+        }
     }
 
     override fun onBind(intent: Intent): IBinder {
@@ -122,6 +125,7 @@ class WebSocketService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(NOTIFICATION_ID, createNotification(false))
         val hostAddress = intent?.getStringExtra(EXTRA_HOST_ADDRESS)
         val newDevice = intent?.getBooleanExtra(NEW_DEVICE, false) ?: false
         Log.d("WebSocketService", "Received hostAddress: $hostAddress new Device: $newDevice")
@@ -148,7 +152,7 @@ class WebSocketService : Service() {
                     startListening()
                     preferencesRepository.saveSynStatus(true)
                     if (!isForegroundStarted) {
-                        startForeground(NOTIFICATION_ID, createNotification())
+                        startForeground(NOTIFICATION_ID, createNotification(true))
                         isForegroundStarted = true
                     }
                     Log.d("service", deviceStatus.toString())
@@ -271,7 +275,7 @@ class WebSocketService : Service() {
                                 if (isForegroundStarted) {
                                     start(hostAddress, false)
                                 } else {
-                                    startForeground(NOTIFICATION_ID, createNotification())
+                                    startForeground(NOTIFICATION_ID, createNotification(false))
                                     delay(500)
                                     start(hostAddress, false)
                                 }
@@ -335,7 +339,7 @@ class WebSocketService : Service() {
     }
 
     // Notification Builder
-    private fun createNotification(): Notification {
+    private fun createNotification(isConnected: Boolean): Notification {
         val channelId = "WebSocket_Foreground_Service"
         val channel = NotificationChannel(
             channelId,
@@ -357,9 +361,11 @@ class WebSocketService : Service() {
         }
         val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
+        val contentText = if (isConnected) "Connected" else "Trying to connect"
+
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Device Connected")
-            .setContentText("Maintaining connection in background")
+            .setContentTitle("Device Connection Status")
+            .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -367,6 +373,7 @@ class WebSocketService : Service() {
             .addAction(R.drawable.ic_launcher_foreground, "Disconnect", disconnectPendingIntent)
             .build()
     }
+
 
     private fun sendActiveNotifications() {
         val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS)
