@@ -5,6 +5,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -12,6 +14,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.komu.sekia.navigation.graphs.RootNavGraph
 import com.komu.sekia.services.Actions
@@ -31,9 +35,19 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : BaseActivity() {
     private val viewModel by viewModels<MainViewModel>()
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.all { it.value }) {
+            viewModel.startWebSocketService(this)
+        } else {
+            showPermissionExplanationDialog()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        checkAndRequestPermissions()
         viewModel.startWebSocketService(this)
         checkNotificationListenerPermission()
         installSplashScreen().apply {
@@ -52,6 +66,40 @@ class MainActivity : BaseActivity() {
                 }
             }
         }
+    }
+
+    private fun checkAndRequestPermissions() {
+        val permissions = mutableListOf(
+            android.Manifest.permission.ACCESS_WIFI_STATE,
+            android.Manifest.permission.ACCESS_NETWORK_STATE
+        )
+
+        permissions.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+
+        val permissionsToRequest = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+        } else {
+            viewModel.startWebSocketService(this)
+        }
+    }
+
+    private fun showPermissionExplanationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Permissions Required")
+            .setMessage("This app requires access to Wi-Fi and location information to function properly. Please grant the necessary permissions.")
+            .setPositiveButton("Open Settings") { _, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.fromParts("package", packageName, null)
+                startActivity(intent)
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     private fun checkNotificationListenerPermission() {
