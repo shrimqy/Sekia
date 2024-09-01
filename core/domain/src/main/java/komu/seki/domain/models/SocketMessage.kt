@@ -15,7 +15,8 @@ enum class MediaAction {
     RESUME,
     PAUSE,
     NEXT_QUEUE,
-    PREV_QUEUE
+    PREV_QUEUE,
+    VOLUME
 }
 
 enum class CommandType {
@@ -33,6 +34,8 @@ enum class TransferType {
 
 @Serializable
 sealed class SocketMessage
+
+
 
 @Serializable
 @SerialName("0")
@@ -54,6 +57,7 @@ data class NotificationMessage(
     val appName: String,
     val title: String?,
     val text: String?,
+    val messages: List<Message>?,
     val groupKey: String?,
     val tag: String?,
     val appIcon: String?,
@@ -66,6 +70,12 @@ data class NotificationMessage(
 data class NotificationAction(
     val label: String,
     val actionId: String
+)
+
+@Serializable
+data class Message(
+    val sender: String,
+    val text: String
 )
 
 @Serializable
@@ -91,7 +101,7 @@ data class PlaybackData(
     val appName: String?,
     val trackTitle: String,
     val artist: String?,
-    val volume: Double?,
+    val volume: Float?,
     var isPlaying: Boolean,
     var mediaAction: MediaAction?,
     val thumbnail: String?,

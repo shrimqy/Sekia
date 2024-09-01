@@ -13,6 +13,7 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Base64
@@ -22,6 +23,7 @@ import com.komu.sekia.services.WebSocketService.Companion.ACTION_STOP_NOTIFICATI
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.common.util.bitmapToBase64
 import komu.seki.common.util.drawableToBitmap
+import komu.seki.domain.models.Message
 import komu.seki.domain.models.NotificationAction
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.NotificationType
@@ -148,8 +150,23 @@ class NotificationService : NotificationListenerService() {
 
         val title = notification.extras.getString(Notification.EXTRA_TITLE)
         val text = notification.extras.getString(Notification.EXTRA_TEXT)
+
+        val messages = notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.mapNotNull {
+            val bundle = it as? Bundle
+            val sender = bundle?.getCharSequence("sender")?.toString() // Get the sender's name
+            val messageText = bundle?.getCharSequence("text")?.toString()
+
+            if (sender != null && messageText != null) {
+                Message(sender = sender, text = messageText)
+            } else {
+                null
+            }
+        } ?: emptyList()
+
         val id = notification.extras.getString(Notification.EXTRA_NOTIFICATION_ID)
         val tag = notification.extras.getString(Notification.EXTRA_NOTIFICATION_TAG)
+
+        Log.d("message", "$appName $title $text messages: $messages")
         Log.d("NotificationService", sbn.toString())
 
         // Retrieve the ranking of the notification
@@ -172,6 +189,7 @@ class NotificationService : NotificationListenerService() {
             appName = appName,
             title = title,
             text = text,
+            messages = messages,
             actions = actions,
             appIcon = appIcon,
             largeIcon = largeIcon,
@@ -182,7 +200,7 @@ class NotificationService : NotificationListenerService() {
         )
         scope.launch {
             try {
-                Log.d("NotificationService", "${notificationMessage.appName} ${notificationMessage.title} ${notificationMessage.text} ${notificationMessage.tag} ${notificationMessage.groupKey}")
+//                Log.d("NotificationService", "${notificationMessage.appName} ${notificationMessage.title} ${notificationMessage.text} ${notificationMessage.tag} ${notificationMessage.groupKey}")
                 webSocketRepository.sendMessage(notificationMessage)
             } catch (e: Exception) {
                 Log.e("NotificationService", "Failed to send notification message", e)
