@@ -66,9 +66,9 @@ fun MediaPlaybackCard(
                     painter = rememberAsyncImagePainter(model = base64ToBitmap(playbackData.thumbnail)),
                     contentDescription = null,
                     modifier = Modifier
-                        .matchParentSize()  // Ensures the image takes up the entire card
-                        .clip(RoundedCornerShape(16.dp)),  // Ensures the image respects the card's rounded corners
-                    contentScale = ContentScale.Crop  // Ensures the image covers the entire background without distortion
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.Crop
                 )
                 // Overlay content
                 Row(
@@ -100,12 +100,14 @@ fun MediaPlaybackCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(
+                                modifier = Modifier.weight(1f)
                             ) {
                                 Text(
                                     text = playbackData.trackTitle,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
+                                    softWrap = true,
                                     overflow = TextOverflow.Ellipsis
                                 )
 
@@ -121,16 +123,16 @@ fun MediaPlaybackCard(
                             IconButton(onClick = onPlayPauseClick, modifier = modifier) {
                                 Box(
                                     modifier = Modifier
-                                        .size(48.dp) // Adjust the size as needed
-                                        .clip(RoundedCornerShape(12.dp)) // Rounded rectangle shape
-                                        .background(MaterialTheme.colorScheme.primary) // Background color
-                                        .padding(8.dp) // Padding inside the button
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .padding(8.dp)
                                 ) {
                                     Icon(
                                         imageVector = if (playbackData.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                         contentDescription = if (playbackData.isPlaying) "Pause" else "Play",
-                                        tint = MaterialTheme.colorScheme.onPrimary, // Icon color
-                                        modifier = Modifier.fillMaxSize() // Ensure the icon fills the button
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.fillMaxSize()
                                     )
                                 }
                             }
