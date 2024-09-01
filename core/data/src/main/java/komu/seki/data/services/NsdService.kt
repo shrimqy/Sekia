@@ -6,14 +6,21 @@ import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
 class NsdService @Inject constructor(@ApplicationContext private val context: Context) {
 
     private val nsdManager: NsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
     private val _services = MutableStateFlow<List<NsdServiceInfo>>(emptyList())
+    private var serviceDiscoveryStatus by mutableStateOf(false)
     val services: StateFlow<List<NsdServiceInfo>> = _services
 
     private var multicastLock: WifiManager.MulticastLock? = null
@@ -25,10 +32,10 @@ class NsdService @Inject constructor(@ApplicationContext private val context: Co
         multicastLock?.acquire()
     }
 
-    // Instantiate a new DiscoveryListener
     private val discoveryListener = object : NsdManager.DiscoveryListener {
         override fun onDiscoveryStarted(regType: String) {
             Log.d(TAG, "Service discovery started")
+            serviceDiscoveryStatus = true
         }
 
         override fun onServiceFound(service: NsdServiceInfo) {
@@ -45,16 +52,19 @@ class NsdService @Inject constructor(@ApplicationContext private val context: Co
 
         override fun onDiscoveryStopped(serviceType: String) {
             Log.i(TAG, "Discovery stopped: $serviceType")
+            serviceDiscoveryStatus = false
         }
 
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
             Log.e(TAG, "Discovery failed to start: Error code: $errorCode")
             nsdManager.stopServiceDiscovery(this)
+            serviceDiscoveryStatus = false
         }
 
         override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
             Log.e(TAG, "Discovery failed to stop: Error code: $errorCode")
             nsdManager.stopServiceDiscovery(this)
+            serviceDiscoveryStatus = false
         }
     }
 
@@ -65,19 +75,25 @@ class NsdService @Inject constructor(@ApplicationContext private val context: Co
 
         override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
             Log.d(TAG, "Service resolved: $serviceInfo")
-            _services.value += serviceInfo
+            _services.value = (_services.value + serviceInfo).distinctBy { it.serviceName }
         }
     }
 
     fun startDiscovery() {
         Log.d(TAG, "Starting service discovery")
         _services.value = emptyList()  // Clear previous results
-        nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+        if (!serviceDiscoveryStatus) {
+            nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+            serviceDiscoveryStatus = true
+        } else {
+            Log.d(TAG, "Listener already connected")
+        }
     }
 
     fun stopDiscovery() {
         Log.d(TAG, "Stopping service discovery")
         nsdManager.stopServiceDiscovery(discoveryListener)
+        serviceDiscoveryStatus = false
     }
 
     fun resolveService(serviceInfo: NsdServiceInfo, resolveListener: NsdManager.ResolveListener) {
