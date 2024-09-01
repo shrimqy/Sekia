@@ -78,13 +78,7 @@ fun mediaController(
 
     // Create or update the notification
     val notification = NotificationCompat.Builder(context, "playback_channel")
-        .setSmallIcon(
-            base64ToIconCompat(playbackData.appIcon)
-                ?: IconCompat.createWithResource(
-                    context,
-                    com.komu.seki.core.common.R.drawable.ic_splash
-                )
-        )
+        .setSmallIcon(com.komu.seki.core.common.R.drawable.ic_splash)
         .setContentTitle(playbackData.trackTitle)
         .setContentText(playbackData.artist)
         .setLargeIcon(playbackData.thumbnail?.let { base64ToBitmap(it) })

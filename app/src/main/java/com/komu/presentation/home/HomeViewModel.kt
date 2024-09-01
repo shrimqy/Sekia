@@ -60,13 +60,8 @@ class HomeViewModel @Inject constructor(
     private val _lastConnected = MutableStateFlow<String?>(null)
     private val lastConnected: StateFlow<String?> = _lastConnected
 
-    val playbackData: StateFlow<PlaybackData?> = playbackRepository.readPlaybackData().also { flow ->
-        viewModelScope.launch {
-            flow.collect {
-                Log.d("HomeViewModel", "PlaybackData updated: $it")
-            }
-        }
-    }
+    val playbackData: StateFlow<PlaybackData?> = playbackRepository.readPlaybackData()
+
     init {
         viewModelScope.launch {
             preferencesRepository.readLastConnected().collect { lastConnectedValue ->

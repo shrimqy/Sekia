@@ -9,18 +9,10 @@ import javax.inject.Inject
 
 class PlaybackRepositoryImpl @Inject constructor() : PlaybackRepository {
     private val _playbackData = MutableStateFlow<PlaybackData?>(null)
-    private val playbackData: StateFlow<PlaybackData?> = _playbackData.also { flow ->
-        Log.d("PlaybackRepository", "Initial PlaybackData: ${flow.value}")
-    }
-
-    init {
-        Log.d("PlaybackRepository", "PlaybackRepositoryImpl initialized")
-    }
+    private val playbackData: StateFlow<PlaybackData?> = _playbackData
 
     override fun updatePlaybackData(data: PlaybackData) {
-        Log.d("PlaybackRepository", "Updating PlaybackData: $data")
         _playbackData.value = data
-        Log.d("PlaybackRepository", "PlaybackData updated: ${_playbackData.value}")
     }
 
     override fun readPlaybackData(): StateFlow<PlaybackData?> {
