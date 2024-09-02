@@ -42,7 +42,7 @@ import kotlin.time.Duration.Companion.seconds
 class HomeViewModel @Inject constructor(
     preferencesRepository: PreferencesRepository,
     playbackRepository: PlaybackRepository,
-    val webSocketRepository: WebSocketRepository,
+    private val webSocketRepository: WebSocketRepository,
     private val appScope: AppCoroutineScope,
     appRepository: AppRepository,
     application: Application
@@ -63,12 +63,12 @@ class HomeViewModel @Inject constructor(
     val playbackData: StateFlow<PlaybackData?> = playbackRepository.readPlaybackData()
 
     init {
-        viewModelScope.launch {
-            preferencesRepository.readLastConnected().collect { lastConnectedValue ->
+        CoroutineScope(Dispatchers.Main).launch {
+            preferencesRepository.readLastConnected().collectLatest { lastConnectedValue ->
                 _lastConnected.value = lastConnectedValue
                 Log.d("HomeViewModel", "Last connected device: $lastConnectedValue")
                 lastConnectedValue?.let {
-                    appRepository.getDevice(it).collect { device ->
+                    appRepository.getDevice(it).collectLatest { device ->
                         Log.d("HomeViewModel", "Device found: $device")
                         _deviceDetails.value = device
                     }
@@ -78,15 +78,16 @@ class HomeViewModel @Inject constructor(
     }
 
     fun toggleSync(context: Context, syncStatus: Boolean) {
-        val intent = Intent(context, WebSocketService::class.java).apply {
-            action = if (syncStatus) Actions.STOP.name else Actions.START.name
-            putExtra(WebSocketService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
-        }
-        context.startService(intent)
-
-        // Fake slower refresh so it doesn't seem like it's not doing anything
-        appScope.launch {
+        CoroutineScope(Dispatchers.IO).launch {
             _isRefreshing.value = true
+            val intent = Intent(context, WebSocketService::class.java).apply {
+                action = if (syncStatus) Actions.STOP.name else Actions.START.name
+                putExtra(WebSocketService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+            }
+            Log.d("HomeViewModel", "Starting Websocket Service")
+            context.startService(intent)
+            // Fake slower refresh so it doesn't seem like it's not doing anything
+
             delay(1.seconds)
             _isRefreshing.value = false
         }

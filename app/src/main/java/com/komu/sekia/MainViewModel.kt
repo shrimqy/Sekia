@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -48,7 +49,7 @@ class MainViewModel @Inject constructor(
 
     fun startWebSocketService(context: Context) {
         viewModelScope.launch {
-            hostAddress.filterNotNull().first().let {
+            hostAddress.filterNotNull().last().let {
                 Intent(context, WebSocketService::class.java).also { intent ->
                     intent.action = Actions.START.name
                     intent.putExtra(WebSocketService.EXTRA_HOST_ADDRESS, it)

@@ -32,6 +32,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
@@ -85,14 +86,17 @@ class NotificationService : NotificationListenerService() {
 
 
     private fun sendActiveNotifications() {
-        val activeNotifications = activeNotifications
-        if (activeNotifications.isNullOrEmpty()) {
-            Log.d("activeNotification", "No active notifications found.")
-        } else {
-            Log.d("activeNotification", "Active notifications found: ${activeNotifications.size}")
-            val rankingMap = currentRanking
-            activeNotifications.forEach { sbn ->
-                sendNotification(sbn, rankingMap, NotificationType.ACTIVE)
+        scope.launch {
+            val activeNotifications = activeNotifications
+            if (activeNotifications.isNullOrEmpty()) {
+                Log.d("activeNotification", "No active notifications found.")
+            } else {
+                Log.d("activeNotification", "Active notifications found: ${activeNotifications.size}")
+                val rankingMap = currentRanking
+                activeNotifications.forEach { sbn ->
+                    sendNotification(sbn, rankingMap, NotificationType.ACTIVE)
+                    delay(50)
+                }
             }
         }
     }
@@ -103,102 +107,106 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun sendNotification(sbn: StatusBarNotification, rankingMap: RankingMap?, notificationType: NotificationType) {
+
         val notification = sbn.notification
         // Check if the notification is ongoing
         if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0 and Notification.FLAG_FOREGROUND_SERVICE) {
             Log.d("NotificationService", "Skipping ongoing notification: ${sbn.packageName}")
             return
         }
-        val packageName = sbn.packageName
 
-        // Get the app name using PackageManager
-        val packageManager = packageManager
+        val context = this
+        scope.launch {
+            val packageName = sbn.packageName
 
-        val appName = try {
-            val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
-            packageManager.getApplicationLabel(applicationInfo).toString()
-        } catch (e: PackageManager.NameNotFoundException) {
-            "Unknown App"
-        }
+            // Get the app name using PackageManager
+            val packageManager = packageManager
 
-        // Get app icon
-        val appIcon = try {
-            val appIconDrawable = packageManager.getApplicationIcon(packageName)
-            if (appIconDrawable is BitmapDrawable) {
-                val appIconBitmap = appIconDrawable.bitmap
-                bitmapToBase64(appIconBitmap)
-            } else {
-                // Convert to Bitmap if it's not already a BitmapDrawable
-                val appIconBitmap = drawableToBitmap(appIconDrawable)
-                bitmapToBase64(appIconBitmap)
+            val appName = try {
+                val applicationInfo = packageManager.getApplicationInfo(packageName, 0)
+                packageManager.getApplicationLabel(applicationInfo).toString()
+            } catch (e: PackageManager.NameNotFoundException) {
+                "Unknown App"
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
 
-        // Get the notification large icon
-        val largeIcon = notification.getLargeIcon()?.let { icon ->
-            val largeIconBitmap = icon.loadDrawable(this)?.let { (it as BitmapDrawable).bitmap }
-            largeIconBitmap?.let { bitmapToBase64(it) }
-        }
-
-        // Get picture (if available)
-        val picture = notification.extras.get(Notification.EXTRA_PICTURE)?.let { pictureBitmap ->
-            bitmapToBase64(pictureBitmap as Bitmap)
-        }
-
-        val title = notification.extras.getString(Notification.EXTRA_TITLE)
-        val text = notification.extras.getString(Notification.EXTRA_TEXT)
-
-        val messages = notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.mapNotNull {
-            val bundle = it as? Bundle
-            val sender = bundle?.getCharSequence("sender")?.toString() // Get the sender's name
-            val messageText = bundle?.getCharSequence("text")?.toString()
-
-            if (sender != null && messageText != null) {
-                Message(sender = sender, text = messageText)
-            } else {
+            // Get app icon
+            val appIcon = try {
+                val appIconDrawable = packageManager.getApplicationIcon(packageName)
+                if (appIconDrawable is BitmapDrawable) {
+                    val appIconBitmap = appIconDrawable.bitmap
+                    bitmapToBase64(appIconBitmap)
+                } else {
+                    // Convert to Bitmap if it's not already a BitmapDrawable
+                    val appIconBitmap = drawableToBitmap(appIconDrawable)
+                    bitmapToBase64(appIconBitmap)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
                 null
             }
-        } ?: emptyList()
 
-        val id = notification.extras.getString(Notification.EXTRA_NOTIFICATION_ID)
-        val tag = notification.extras.getString(Notification.EXTRA_NOTIFICATION_TAG)
+            // Get the notification large icon
+            val largeIcon = notification.getLargeIcon()?.let { icon ->
+                val largeIconBitmap = icon.loadDrawable(context)?.let { (it as BitmapDrawable).bitmap }
+                largeIconBitmap?.let { bitmapToBase64(it) }
+            }
 
-        Log.d("message", "$appName $title $text messages: $messages")
-        Log.d("NotificationService", sbn.toString())
+            // Get picture (if available)
+            val picture = notification.extras.get(Notification.EXTRA_PICTURE)?.let { pictureBitmap ->
+                bitmapToBase64(pictureBitmap as Bitmap)
+            }
 
-        // Retrieve the ranking of the notification
-        val ranking = Ranking()
-        val rankingImportance = if (rankingMap?.getRanking(sbn.key, ranking) == true) {
-            ranking.importance
-        } else {
-            NotificationManager.IMPORTANCE_DEFAULT
-        }
+            val title = notification.extras.getString(Notification.EXTRA_TITLE)
+            val text = notification.extras.getString(Notification.EXTRA_TEXT)
 
-        // Retrieve the actions from the notification
-        val actions = notification.actions?.map { action ->
-            NotificationAction(
-                label = action.title.toString(),
-                actionId = action.actionIntent.toString()
+            val messages = notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.mapNotNull {
+                val bundle = it as? Bundle
+                val sender = bundle?.getCharSequence("sender")?.toString() // Get the sender's name
+                val messageText = bundle?.getCharSequence("text")?.toString()
+
+                if (sender != null && messageText != null) {
+                    Message(sender = sender, text = messageText)
+                } else {
+                    null
+                }
+            } ?: emptyList()
+
+            val id = notification.extras.getString(Notification.EXTRA_NOTIFICATION_ID)
+            val tag = notification.extras.getString(Notification.EXTRA_NOTIFICATION_TAG)
+
+            Log.d("message", "$appName $title $text messages: $messages")
+            Log.d("NotificationService", sbn.toString())
+
+            // Retrieve the ranking of the notification
+            val ranking = Ranking()
+            val rankingImportance = if (rankingMap?.getRanking(sbn.key, ranking) == true) {
+                ranking.importance
+            } else {
+                NotificationManager.IMPORTANCE_DEFAULT
+            }
+
+            // Retrieve the actions from the notification
+            val actions = notification.actions?.map { action ->
+                NotificationAction(
+                    label = action.title.toString(),
+                    actionId = action.actionIntent.toString()
+                )
+            }
+
+            val notificationMessage = NotificationMessage(
+                appName = appName,
+                title = title,
+                text = text,
+                messages = messages,
+                actions = actions,
+                appIcon = appIcon,
+                largeIcon = largeIcon,
+                bigPicture = picture,
+                tag = sbn.key,
+                groupKey = sbn.groupKey,
+                notificationType = notificationType
             )
-        }
 
-        val notificationMessage = NotificationMessage(
-            appName = appName,
-            title = title,
-            text = text,
-            messages = messages,
-            actions = actions,
-            appIcon = appIcon,
-            largeIcon = largeIcon,
-            bigPicture = picture,
-            tag = sbn.key,
-            groupKey = sbn.groupKey,
-            notificationType = notificationType
-        )
-        scope.launch {
             try {
 //                Log.d("NotificationService", "${notificationMessage.appName} ${notificationMessage.title} ${notificationMessage.text} ${notificationMessage.tag} ${notificationMessage.groupKey}")
                 webSocketRepository.sendMessage(notificationMessage)
