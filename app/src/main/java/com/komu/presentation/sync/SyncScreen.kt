@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.komu.presentation.sync.components.DeviceItem
+import com.komu.sekia.navigation.Graph
+import com.komu.sekia.navigation.MainRouteScreen
 import komu.seki.presentation.components.PullRefresh
 import komu.seki.presentation.screens.EmptyScreen
 import komu.seki.presentation.screens.LoadingScreen
@@ -102,15 +104,9 @@ fun SyncScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        scope.launch {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                notificationPermissionResultLauncher.launch(
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                )
-                            }
-                        }
                         Log.d("Service", "Connecting to service: ${selectedService.value}")
                         viewModel.saveDevice(context, selectedService.value!!)
+                        rootNavController.navigate(route = Graph.MainScreenGraph)
                         showDialog.value = false
                     }
                 ) {

@@ -1,5 +1,7 @@
 package com.komu.sekia.navigation.graphs
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -25,6 +27,10 @@ fun MainNavGraph(
         route = Graph.MainScreenGraph,
         startDestination = MainRouteScreen.HomeScreen.route,
         modifier = Modifier.padding(innerPadding),
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() },
+        popEnterTransition = { fadeIn() },
+        popExitTransition = { fadeOut() }
     ) {
         composable(route = MainRouteScreen.HomeScreen.route) {
             HomeScreen()

@@ -1,13 +1,16 @@
 package komu.seki.presentation.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.QueryStats
+import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -23,14 +26,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import com.komu.seki.presentation.R
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.dp
+import com.komu.seki.core.common.R
 
 @Composable
 fun AppTopBar(
     items: List<NavigationItem>,
     selectedItem: Int,
+    onNewDeviceClick: ()-> Unit,
 ) {
     var isOverflowExpanded by remember {
         mutableStateOf(false)
@@ -91,10 +98,37 @@ fun AppTopBar(
         },
         actions = {
             Row {
-                if (!active && selectedItem !=0) {
+                if (!active && selectedItem == 1) {
                     IconButton(onClick = { active = true }) {
                         Icon(imageVector = Icons.Default.Search, contentDescription = "Search Icon")
                     }
+                }
+
+                if (selectedItem == 1) {
+                    IconButton(onClick = { isOverflowExpanded = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_overflow_24dp),
+                            contentDescription = "Overflow"
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = isOverflowExpanded,
+                    onDismissRequest = { isOverflowExpanded = false },
+                    shape = RoundedCornerShape(16.dp),
+                    offset = DpOffset(x = (-9).dp, y = 0.dp)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(text = "Add a New Device") },
+                        onClick = { onNewDeviceClick() },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Devices,
+                                contentDescription = "Import Icon"
+                            )
+                        }
+                    )
                 }
             }
         }

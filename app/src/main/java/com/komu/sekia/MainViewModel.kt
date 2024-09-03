@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.komu.sekia.navigation.Graph
+import com.komu.sekia.navigation.SyncRoute
 import com.komu.sekia.services.Actions
 import com.komu.sekia.services.NotificationService
 import com.komu.sekia.services.WebSocketService
@@ -69,7 +70,7 @@ class MainViewModel @Inject constructor(
                 startDestination = if (hostAddress != null) {
                     Graph.MainScreenGraph
                 } else {
-                    Graph.SyncGraph
+                    SyncRoute.SyncScreen.route
                 }
                 delay(150)
                 _hostAddress.value = hostAddress

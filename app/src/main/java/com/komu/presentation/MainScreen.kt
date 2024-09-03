@@ -26,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import com.komu.presentation.home.HomeViewModel
 import com.komu.sekia.R
 import com.komu.sekia.navigation.MainRouteScreen
+import com.komu.sekia.navigation.SyncRoute
 import com.komu.sekia.navigation.graphs.MainNavGraph
 import komu.seki.presentation.components.AppTopBar
 import komu.seki.presentation.components.NavBar
@@ -94,6 +95,7 @@ fun MainScreen(
                     AppTopBar(
                         items = navigationItem,
                         selectedItem = selectedItem,
+                        onNewDeviceClick = { rootNavController.navigate(route = SyncRoute.SyncScreen.route) }
                     )
                 }
             },
