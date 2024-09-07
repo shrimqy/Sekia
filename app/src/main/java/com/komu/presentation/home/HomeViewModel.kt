@@ -107,6 +107,12 @@ class HomeViewModel @Inject constructor(
         sendPlaybackData(playbackData.value!!, MediaAction.PREV_QUEUE)
     }
 
+    fun onVolumeChange(volume: Int) {
+        CoroutineScope(Dispatchers.IO).launch {
+            sendMessage(PlaybackData(volume = volume.toFloat(), appName = playbackData.value?.appName, mediaAction = MediaAction.VOLUME))
+        }
+    }
+
     private fun sendPlaybackData(playbackData: PlaybackData, mediaAction: MediaAction) {
         playbackData.mediaAction = mediaAction
         CoroutineScope(Dispatchers.IO).launch {

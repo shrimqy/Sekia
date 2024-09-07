@@ -98,14 +98,14 @@ data class DeviceStatus(
 @Serializable
 @SerialName("5")
 data class PlaybackData(
-    val appName: String?,
-    val trackTitle: String,
-    val artist: String?,
-    val volume: Float?,
-    var isPlaying: Boolean,
+    val appName: String? = null,
+    val trackTitle: String? = null,
+    val artist: String? = null,
+    var volume: Float,
+    var isPlaying: Boolean? = null,
     var mediaAction: MediaAction?,
-    val thumbnail: String?,
-    val appIcon: String?
+    val thumbnail: String? = null,
+    val appIcon: String? = null,
 ) : SocketMessage(), Parcelable
 
 @Serializable

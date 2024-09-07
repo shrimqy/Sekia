@@ -29,11 +29,16 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VolumeSlider(
-    initialVolume: Float,
+    volume: Float,
     onVolumeChange: (Int) -> Unit
 ) {
-    var sliderPosition by remember { mutableFloatStateOf(initialVolume) }
+    var sliderPosition by remember { mutableFloatStateOf(volume) }
     val interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
+
+    // Update sliderPosition whenever the volume parameter changes
+    LaunchedEffect(volume) {
+        sliderPosition = volume
+    }
 
     Column(
         modifier = Modifier
