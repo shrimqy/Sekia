@@ -46,7 +46,7 @@
 
 2. **Clipboard Sharing**:
    - Copy content on the desktop and it will automatically sync with your android (That is if you have enabled it from the settings).
-   - To share clipboard from android you will have to manually sent it through the sharesheet that shows after you perform a copy action).
+   - To share clipboard from android you will have to manually sent it through the share sheet that shows after you perform a copy action).
 3. **File Transfer**:
    - Use the share sheet from android/windows and select the app to share any files between the devices.
 
@@ -54,7 +54,10 @@
 
 ## Screenshots
 
-<img src="./.github/readme-images/Screenshot.png" alt="Screenshots of the app" style="max-width: 200px;">
+<p align="left">
+  <img src="./.github/readme-images/Screenshot.png" alt="Screenshots of the app" style="max-width: 200px; max-height: 425px;">
+</p>
+
 
 
 
