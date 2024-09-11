@@ -54,7 +54,7 @@
 
 ## Screenshots
 
-![screenshots of app](./.github/readme-images/Screenshot.png)
+<img src="./.github/readme-images/ReadmeHero.png" alt="Screenshots of the app" style="max-width: 200px;">
 
 
 
