@@ -4,45 +4,32 @@
 
 # Sekia
 
-**Sekia** is an opinionated, custom-built app that bridges the gap between your Windows PC and Android phone, offering seamless clipboard and notification sharing. Born out of the frustration with existing solutions, Sekia provides a straightforward, no-nonsense alternative for those who need more from their Phone Link experience.
-
+**Sekia** is an opinionated, custom-built app that bridges the gap between your Windows PC and Android phone, offering seamless clipboard, notification mirroring and more. Born out of the frustration with existing solutions, Sekia provides a straightforward, no-nonsense alternative for those who need more from their Phone Link experience.
 
 ## Features
 
-- **Clipboard Sharing**: Easily share clipboard content between your Android device and Windows PC.
-- **Media Control**: Control media playback from android.
+- **Clipboard Sharing**: Seamlessly share clipboard content between your Android device and Windows PC.
+- **Media Control**: Control media playback and volume of your PC from android.
 - **File Sharing**: Share files between your devices easily.
 - **Notification**: Allows toasting the notifications from your android in desktop.
-
 
 ## Limitations
 
 - **Clipboard Sharing on Android 13+**:
    - Due to Android's restrictions, clipboard sharing is only possible via the share sheet after Android 13.
-   - 
 ## Installation
 
 ### Android
-
-1. **Download the APK**
-2. **Install the App**:
-   - You might need to enable installation from unknown sources in your device settings.
-3. **Permissions**:
-   - Allow restricted access from App Info (after trying to grant the notification access).
-   - Grant notification permissions to enable notification mirroring.
-
-### Windows
-
-1. **Download the Windows App**: [Seki](https://github.com/shrimqy/Seki/).
-2. **Install the Certificate**:
-   - Manually install the provided certificate to ensure secure communication between devices. (I will shortly release it on windows store.)
+1. Get the APK from [Releases](https://github.com/shrimqy/Sekia/releases/tag/v0.1)
+2. Download the Windows App, [**Seki**](https://github.com/shrimqy/Seki): [Microsoft Store](https://apps.microsoft.com/store/detail/9PJV6D1JPG0H?cid=DevShareMCLPCS).
 
 ## How to Use
 
-1. **Set Up**:
+1. **Setting Up**:
+   - Permissions: Allow the app to post notifications, location access, and restricted access from App Info (after trying to grant the notification access), .
    - Ensure both your Android device and Windows PC are connected to the same network.
    - Launch the app on your Windows PC.
-   - Open app on your Android device and grant the necessary permissions, and try to add a new device (Pull to refresh if it doesn't show any devices).
+   - Try to add a new device from the device card or device tab(Pull to refresh if it doesn't show any devices).
 
 2. **Clipboard Sharing**:
    - Copy content on the desktop and it will automatically sync with your android (That is if you have enabled it from the settings).
@@ -50,26 +37,21 @@
 3. **File Transfer**:
    - Use the share sheet from android/windows and select the app to share any files between the devices.
 
-   
 
 ## Screenshots
 
-<p align="left">
-  <img src="./.github/readme-images/Screenshot.png" alt="Screenshots of the app" style="max-width: 200px; max-height: 425px;">
-</p>
+## Screenshots
 
-
-
+![screenshots of app](./.github/readme-images/Screenshot.png)
 
 ## Roadmap
 
 - Notification Actions.
-- Explore Device Files directly.
-- Emulate Android Device.
+- Exploring Device Files.
+- Screen Casting
 
 ## Tech Stack
 
 - **Android**: Kotlin, Jetpack Compose
 - **Desktop**: [Seki](https://github.com/shrimqy/Seki) (WinUI 3, C#)
 - **Network**: Mdns, Websockets.
-
