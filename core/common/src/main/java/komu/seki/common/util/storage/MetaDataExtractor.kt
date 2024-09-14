@@ -49,10 +49,8 @@ fun extractMetadata(context: Context, uri: Uri): FileMetadata {
 
     return FileMetadata(
         fileName = fileName,
-        fileType = fileType,
         fileSize = fileSize,
         uri = uri.toString(),
-        creationDate = creationDate,
-        modificationDate = modificationDate
+        mimeType = fileType
     )
 }

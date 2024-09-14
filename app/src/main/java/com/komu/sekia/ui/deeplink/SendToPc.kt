@@ -10,11 +10,10 @@ import android.util.Log
 import android.widget.Toast
 import com.komu.sekia.ui.base.BaseActivity
 import dagger.hilt.android.AndroidEntryPoint
-import komu.seki.common.models.FileMetadata
 import komu.seki.common.util.storage.extractMetadata
 import komu.seki.domain.models.ClipboardMessage
+import komu.seki.domain.models.DataTransferType
 import komu.seki.domain.models.FileTransfer
-import komu.seki.domain.models.FileTransferContent
 import komu.seki.domain.models.TransferType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +21,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.IOException
 
 @AndroidEntryPoint
 class ShareToPc : BaseActivity() {
@@ -48,9 +46,9 @@ class ShareToPc : BaseActivity() {
                 if (intent?.action == Intent.ACTION_SEND) {
                     when {
                         intent.type?.startsWith("text/") == true -> handleTextShare(intent)
-                        intent.type?.startsWith("image/") == true -> handleFileShare(intent)
-                        intent.type?.startsWith("video/") == true -> handleFileShare(intent)
-                        intent.type?.startsWith("application/") == true -> handleFileShare(intent)
+                        intent.type?.startsWith("image/") == true -> handleFileTransfer(intent)
+                        intent.type?.startsWith("video/") == true -> handleFileTransfer(intent)
+                        intent.type?.startsWith("application/") == true -> handleFileTransfer(intent)
                         else -> {
                             Log.e("ShareToPc", "Unsupported content type: ${intent.type}")
                             finishAffinity()
@@ -75,7 +73,7 @@ class ShareToPc : BaseActivity() {
         if (text != null) {
                 scope.launch {
                     try {
-                        webSocketService?.sendMessage(ClipboardMessage(text))
+                        networkService?.sendMessage(ClipboardMessage(text))
                         Log.d("ShareToPc", "Text message sent successfully")
                         runOnUiThread {
                             finishAffinity()
@@ -93,75 +91,43 @@ class ShareToPc : BaseActivity() {
         }
     }
 
-    private fun handleFileShare(intent: Intent) {
+    private fun handleFileTransfer(intent: Intent) {
         val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
         Log.d("ShareToPc", "Handling file share: $uri")
 
         if (uri != null) {
-            val metadata = extractMetadata(applicationContext, uri)
-//            val maxWebSocketFileSize = 50 * 1024 * 1024 // 10 MB
-//            if (metadata.fileSize < maxWebSocketFileSize) {
-            handleSmallFileTransfer(uri, metadata)
-//            } else {
-//                handleLargeFileTransfer(uri, metadata)
-//            }
+            scope.launch {
+                val bufferSize = 512 * 1024 // 512KB
+                val inputStream = contentResolver.openInputStream(uri)
+                try {
+                    val metadata = extractMetadata(applicationContext, uri)
+                    networkService?.sendMessage(FileTransfer(TransferType.WEBSOCKET, DataTransferType.METADATA, metadata))
+                    inputStream?.buffered()?.let { bufferedInput ->
+                        val buffer = ByteArray(bufferSize)
+                        var bytesRead: Int
+                        while (bufferedInput.read(buffer).also { bytesRead = it } != -1) {
+                            val chunk = buffer.copyOf(bytesRead)
+                            val encodedChunk = Base64.encodeToString(chunk, Base64.DEFAULT)
+                            networkService?.sendMessage(FileTransfer(TransferType.WEBSOCKET, DataTransferType.CHUNK, chunkData = encodedChunk))
+                        }
+                    }
+                    inputStream?.close()
+                }
+                catch (e: Exception) {
+                    Log.e("ShareToPc", "Failed to send small file", e)
+                    runOnUiThread {
+                        showToast("Failed to share file")
+                        finishAffinity()
+                    }
+                }
+                Log.d("ShareToPc", "Small file sent successfully")
+            }
         } else {
             Log.e("ShareToPc", "Received null URI")
-            showToast("No file to share")
+            showToast("Error")
             finishAffinity()
         }
     }
-
-    private fun handleSmallFileTransfer(uri: Uri, metadata: FileMetadata) {
-        scope.launch {
-            try {
-                // Send the file in chunks
-                val bufferSize = 1024 * 1024 // 8KB
-                val inputStream = contentResolver.openInputStream(uri)
-                webSocketService?.sendMessage(FileTransfer(TransferType.WEBSOCKET, metadata))
-                inputStream?.buffered()?.let { bufferedInput ->
-                    val buffer = ByteArray(bufferSize)
-                    var bytesRead: Int
-                    while (bufferedInput.read(buffer).also { bytesRead = it } != -1) {
-                        val chunk = buffer.copyOf(bytesRead)
-                        webSocketService?.sendMessage(FileTransferContent(chunk))
-                    }
-                }
-                inputStream?.close()
-                Log.d("ShareToPc", "Small file sent successfully")
-                runOnUiThread {
-                    showToast("File shared successfully")
-                    finishAffinity()
-                }
-            } catch (e: Exception) {
-                Log.e("ShareToPc", "Failed to send small file", e)
-                runOnUiThread {
-                    showToast("Failed to share file")
-                    finishAffinity()
-                }
-            }
-        }
-    }
-
-//    private fun handleLargeFileTransfer(uri: Uri, metadata: FileMetadata) {
-//        try {
-//            scope.launch {
-//                webSocketService?.sendMessage(FileTransfer(TransferType.HTTP))
-//                delay(300)
-//            }
-//            FileTransferService.startService(this, uri, metadata)
-//            Log.d("ShareToPc", "Started large file transfer service")
-//            runOnUiThread {
-//                showToast("File transfer started")
-//            }
-//        } catch (e: Exception) {
-//            Log.e("ShareToPc", "Failed to start file transfer service", e)
-//            runOnUiThread {
-//                showToast("Failed to start file transfer")
-//            }
-//            finishAffinity()
-//        }
-//    }
 
     private val handler = Handler(Looper.getMainLooper())
 

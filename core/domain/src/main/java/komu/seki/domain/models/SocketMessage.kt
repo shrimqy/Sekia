@@ -29,7 +29,11 @@ enum class CommandType {
 enum class TransferType {
     WEBSOCKET,
     P2P,
-    UDP
+    UDP,
+}
+
+enum class DataTransferType {
+    METADATA, CHUNK
 }
 
 @Serializable
@@ -118,22 +122,9 @@ data class Command(
 @SerialName("7")
 data class FileTransfer(
     val transferType: TransferType,
-    val metadata: FileMetadata?  = null
+    val dataTransferType: DataTransferType,
+    val metadata: FileMetadata? = null,
+    val progress: Float? = null,
+    val chunkData: String? = null,
 ) : SocketMessage()
 
-data class FileTransferContent(
-    val data: ByteArray
-) : SocketMessage() {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as FileTransferContent
-
-        return data.contentEquals(other.data)
-    }
-
-    override fun hashCode(): Int {
-        return data.contentHashCode()
-    }
-}

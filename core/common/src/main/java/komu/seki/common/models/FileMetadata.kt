@@ -8,9 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class FileMetadata(
     val fileName: String,
-    val fileType: String,
+    val mimeType: String,
     val fileSize: Long,
     val uri: String,
-    val creationDate: String?,
-    val modificationDate: String?,
 ) : Parcelable
