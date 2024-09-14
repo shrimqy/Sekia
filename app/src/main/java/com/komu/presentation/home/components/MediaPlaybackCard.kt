@@ -55,7 +55,7 @@ fun MediaPlaybackCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
     ) {
-        playbackData?.let {
+        playbackData?.trackTitle?. let {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -103,7 +103,7 @@ fun MediaPlaybackCard(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    text = playbackData.trackTitle,
+                                    text = playbackData.trackTitle!!,
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
@@ -129,8 +129,8 @@ fun MediaPlaybackCard(
                                         .padding(8.dp)
                                 ) {
                                     Icon(
-                                        imageVector = if (playbackData.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                        contentDescription = if (playbackData.isPlaying) "Pause" else "Play",
+                                        imageVector = if (playbackData.isPlaying!!) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        contentDescription = if (playbackData.isPlaying!!) "Pause" else "Play",
                                         tint = MaterialTheme.colorScheme.onPrimary,
                                         modifier = Modifier.fillMaxSize()
                                     )

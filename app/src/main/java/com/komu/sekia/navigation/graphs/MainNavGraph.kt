@@ -33,7 +33,7 @@ fun MainNavGraph(
         popExitTransition = { fadeOut() }
     ) {
         composable(route = MainRouteScreen.HomeScreen.route) {
-            HomeScreen()
+            HomeScreen(rootNavController)
         }
         composable(route = MainRouteScreen.DevicesScreen.route) {
             DevicesScreen(rootNavController)

@@ -29,7 +29,9 @@ fun DeviceItem(service: NsdServiceInfo, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Rounded.Devices,
                 contentDescription = "Device Icon",
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.surfaceTint,
+
             )
             Spacer(Modifier.width(5.dp))
             Text(

@@ -5,12 +5,14 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import komu.seki.domain.models.DeviceInfo
+import komu.seki.domain.models.PreferencesSettings
 import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
@@ -21,35 +23,68 @@ class PreferencesDatastore @Inject constructor(
     @ApplicationContext private val context: Context
 ) : PreferencesRepository {
 
-    private object DataPreferencesKeys{
+    private object PreferencesKeys{
         val SYNC_STATUS = booleanPreferencesKey("syncStatus")
         val LAST_CONNECTED = stringPreferencesKey("lastConnected")
+        val AUTO_DISCOVERY = booleanPreferencesKey("autoDiscovery")
+        val IMAGE_CLIPBOARD = booleanPreferencesKey("autoImageClipboard")
+        val STORAGE_LOCATION = stringPreferencesKey("storageLocation")
     }
 
     private val datastore = context.dataStore
 
-
     override suspend fun saveSynStatus(syncStatus: Boolean) {
         datastore.edit { status->
-            status[DataPreferencesKeys.SYNC_STATUS] = syncStatus
+            status[PreferencesKeys.SYNC_STATUS] = syncStatus
         }
     }
 
     override fun readSyncStatus(): Flow<Boolean> {
         return datastore.data.map { status ->
-            status[DataPreferencesKeys.SYNC_STATUS] ?: false
+            status[PreferencesKeys.SYNC_STATUS] ?: false
         }
     }
 
     override suspend fun saveLastConnected(hostAddress: String) {
         datastore.edit { status->
-            status[DataPreferencesKeys.LAST_CONNECTED] = hostAddress
+            status[PreferencesKeys.LAST_CONNECTED] = hostAddress
         }
     }
 
     override fun readLastConnected(): Flow<String?> {
         return datastore.data.map { host ->
-            host[DataPreferencesKeys.LAST_CONNECTED]
+            host[PreferencesKeys.LAST_CONNECTED]
         }
     }
+
+    override suspend fun saveAutoDiscoverySettings(discoverySettings: Boolean) {
+        datastore.edit {
+            it[PreferencesKeys.AUTO_DISCOVERY] = discoverySettings
+        }
+    }
+
+    override suspend fun saveImageClipboardSettings(clipboardSettings: Boolean) {
+        datastore.edit {
+            it[PreferencesKeys.IMAGE_CLIPBOARD] = clipboardSettings
+        }
+    }
+
+    override suspend fun updateStorageLocation(uri: String) {
+        datastore.edit {
+            it[PreferencesKeys.STORAGE_LOCATION] = uri
+        }
+    }
+
+    override fun preferenceSettings(): Flow<PreferencesSettings>  {
+        return datastore.data.catch {
+            emit(emptyPreferences())
+        }.map { preferences->
+            val discovery = preferences[PreferencesKeys.AUTO_DISCOVERY] ?: true
+            val imageClipboard = preferences[PreferencesKeys.IMAGE_CLIPBOARD] ?: true
+            val storageLocation = preferences[PreferencesKeys.STORAGE_LOCATION] ?: "/storage/emulated/0/Downloads"
+            PreferencesSettings(discovery, imageClipboard, storageLocation)
+        }
+    }
+
+
 }

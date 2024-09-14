@@ -19,7 +19,7 @@ sealed class SyncRoute(var route: String) {
 }
 
 sealed class SettingsRouteScreen(var route: String) {
-
+    data object AboutScreen: SettingsRouteScreen("about")
 }
 
 sealed class DevicesRouteScreen(var route: String) {

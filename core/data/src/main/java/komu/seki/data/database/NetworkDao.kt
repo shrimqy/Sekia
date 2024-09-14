@@ -18,7 +18,7 @@ interface NetworkDao {
     fun getAllNetworksFlow(): Flow<List<Network>>
 
     @Query("SELECT * FROM Network WHERE ssid = :ssid")
-    fun getNetwork(ssid: String): Flow<Network>
+    fun getNetwork(ssid: String): Flow<Network>?
 
     @Query("DELETE FROM Network WHERE ssid = :ssid")
     suspend fun removeNetwork(ssid: String)

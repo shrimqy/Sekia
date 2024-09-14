@@ -18,15 +18,15 @@ class AppRepository @Inject constructor(
     private val deviceDao: DeviceDao,
     private val networkDao: NetworkDao
 ){
-    suspend fun getAllDevicesFlow() = deviceDao.getAllDevicesFlow()
+    fun getAllDevicesFlow() = deviceDao.getAllDevicesFlow()
     suspend fun addDevice(device: Device) = deviceDao.addDevice(device)
-    suspend fun getDevice(ipAddress: String) = deviceDao.getDevice(ipAddress)
+    fun getDevice(ipAddress: String) = deviceDao.getDevice(ipAddress)
     suspend fun getHostAddress(deviceName: String) = deviceDao.getHostAddress(deviceName)
     suspend fun removeDevice(deviceName: String) = deviceDao.removeDevice(deviceName)
     suspend fun updateDevice(device: Device) = deviceDao.updateDevice(device)
 
-    suspend fun getAllNetworkFlow() = networkDao.getAllNetworksFlow()
+    fun getAllNetworkFlow() = networkDao.getAllNetworksFlow()
     suspend fun addNetwork(network: Network) = networkDao.addNetwork(network)
-    suspend fun getNetwork(ssid: String) = networkDao.getNetwork(ssid)
+    fun getNetwork(ssid: String) = networkDao.getNetwork(ssid)
     suspend fun removeNetwork(ssid: String) = networkDao.removeNetwork(ssid)
 }

@@ -1,22 +1,19 @@
 package com.komu.presentation.home
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
 import com.komu.sekia.di.AppCoroutineScope
 import com.komu.sekia.services.Actions
-import com.komu.sekia.services.WebSocketService
+import com.komu.sekia.services.NetworkService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import komu.seki.data.database.Device
 import komu.seki.data.repository.AppRepository
-import komu.seki.data.repository.PlaybackRepositoryImpl
-import komu.seki.data.services.handleMediaAction
-import komu.seki.data.services.mediaController
-import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.MediaAction
 import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.SocketMessage
@@ -26,13 +23,11 @@ import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,7 +35,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    preferencesRepository: PreferencesRepository,
+    val preferencesRepository: PreferencesRepository,
     playbackRepository: PlaybackRepository,
     private val webSocketRepository: WebSocketRepository,
     private val appScope: AppCoroutineScope,
@@ -48,8 +43,8 @@ class HomeViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
-    val syncStatus: StateFlow<Boolean> = preferencesRepository.readSyncStatus()
-        .stateIn(viewModelScope, SharingStarted.Lazily, false)
+    private val _syncStatus = MutableStateFlow(false)
+    val syncStatus: StateFlow<Boolean> = _syncStatus
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
@@ -57,37 +52,44 @@ class HomeViewModel @Inject constructor(
     private val _deviceDetails = MutableStateFlow<Device?>(null)
     val deviceDetails: StateFlow<Device?> = _deviceDetails
 
-    private val _lastConnected = MutableStateFlow<String?>(null)
-    private val lastConnected: StateFlow<String?> = _lastConnected
-
     val playbackData: StateFlow<PlaybackData?> = playbackRepository.readPlaybackData()
 
     init {
-        CoroutineScope(Dispatchers.Main).launch {
+        appScope.launch {
             preferencesRepository.readLastConnected().collectLatest { lastConnectedValue ->
-                _lastConnected.value = lastConnectedValue
-                Log.d("HomeViewModel", "Last connected device: $lastConnectedValue")
-                lastConnectedValue?.let {
-                    appRepository.getDevice(it).collectLatest { device ->
+                if (lastConnectedValue != null) {
+                    appRepository.getDevice(lastConnectedValue).collectLatest { device ->
                         Log.d("HomeViewModel", "Device found: $device")
                         _deviceDetails.value = device
                     }
                 }
             }
         }
+
+        appScope.launch {
+            preferencesRepository.readSyncStatus().collectLatest {
+                _syncStatus.value = it
+            }
+        }
+        viewModelScope.launch {
+            val currentStatus = preferencesRepository.readSyncStatus().firstOrNull() ?: false
+            if (!currentStatus) {
+                toggleSync(false)
+            }
+        }
     }
 
-    fun toggleSync(context: Context, syncStatus: Boolean) {
-        CoroutineScope(Dispatchers.IO).launch {
+    fun toggleSync(syncStatus: Boolean) {
+        appScope.launch {
             _isRefreshing.value = true
-            val intent = Intent(context, WebSocketService::class.java).apply {
-                action = if (syncStatus) Actions.STOP.name else Actions.START.name
-                putExtra(WebSocketService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+            if (deviceDetails.value?.ipAddress != null) {
+                // Proceed based on current status
+                val intent = Intent(getApplication(), NetworkService::class.java).apply {
+                    action = if (syncStatus) Actions.STOP.name else Actions.START.name
+                    putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                }
+                getApplication<Application>().startService(intent)
             }
-            Log.d("HomeViewModel", "Starting Websocket Service")
-            context.startService(intent)
-            // Fake slower refresh so it doesn't seem like it's not doing anything
-
             delay(1.seconds)
             _isRefreshing.value = false
         }

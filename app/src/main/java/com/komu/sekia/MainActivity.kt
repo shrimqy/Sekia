@@ -1,17 +1,12 @@
 package com.komu.sekia
 
 import android.app.AlertDialog
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.IBinder
 import android.provider.Settings
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,13 +15,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.komu.sekia.navigation.Graph
+import com.komu.sekia.navigation.SyncRoute
 import com.komu.sekia.navigation.graphs.RootNavGraph
-import com.komu.sekia.services.Actions
-import com.komu.sekia.services.WebSocketService
 import com.komu.sekia.ui.base.BaseActivity
 import com.komu.sekia.ui.theme.SekiraTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,6 +31,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : BaseActivity() {
     private val viewModel by viewModels<MainViewModel>()
+
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -61,8 +59,7 @@ class MainActivity : BaseActivity() {
                         .background(color = MaterialTheme.colorScheme.background)
                         .fillMaxSize()
                 ) {
-                    val startDestination = viewModel.startDestination
-                    RootNavGraph(startDestination = startDestination)
+                    RootNavGraph(startDestination = Graph.MainScreenGraph)
                 }
             }
         }
@@ -71,8 +68,12 @@ class MainActivity : BaseActivity() {
     private fun checkAndRequestPermissions() {
         val permissions = mutableListOf(
             android.Manifest.permission.ACCESS_WIFI_STATE,
-            android.Manifest.permission.ACCESS_NETWORK_STATE
+            android.Manifest.permission.ACCESS_NETWORK_STATE,
         )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         permissions.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
 

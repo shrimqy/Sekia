@@ -6,17 +6,18 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.activity.ComponentActivity
-import com.komu.sekia.services.WebSocketService
+import com.komu.sekia.services.NetworkService
 
 abstract class BaseActivity : ComponentActivity() {
-    protected var webSocketService: WebSocketService? = null
+    protected var networkService: NetworkService? = null
     protected var bound: Boolean = false
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as WebSocketService.LocalBinder
-            webSocketService = binder.getService()
+            val binder = service as NetworkService.LocalBinder
+            networkService = binder.getService()
             bound = true
         }
 
@@ -31,7 +32,8 @@ abstract class BaseActivity : ComponentActivity() {
     }
 
     private fun bindService() {
-        Intent(this, WebSocketService::class.java).also { intent ->
+        Intent(this, NetworkService::class.java).also { intent ->
+            Log.d("BaseActivity", "Binding WebSocket Service")
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
     }

@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Battery2Bar
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.SyncDisabled
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -30,7 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.komu.sekia.navigation.SyncRoute
 import komu.seki.common.util.base64ToBitmap
 import komu.seki.data.database.Device
 
@@ -41,6 +45,7 @@ fun DeviceCard(
     syncStatus: Boolean,
     onSyncAction: () -> Unit,
     batteryLevel: Int? = null,
+    navController: NavController
 ) {
     Card(
         onClick = { /*TODO: Handle card click */ },
@@ -95,21 +100,37 @@ fun DeviceCard(
                             Icon(
                                 imageVector = if (syncStatus) Icons.Rounded.SyncDisabled else Icons.Rounded.Sync,
                                 contentDescription = if (syncStatus) "Disconnect" else "Sync",
+                                tint = MaterialTheme.colorScheme.surfaceTint,
                             )
                         }
                     }
                 }
-            } ?: EmptyPlaceholder()
+            } ?: EmptyPlaceholder(navController)
         }
     }
 }
 
 @Composable
-fun EmptyPlaceholder() {
+fun EmptyPlaceholder(navController: NavController) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = "No device information available")
+        Column (
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(text = "No devices Found")
+            Spacer(modifier = Modifier.size(10.dp))
+            Button(
+                onClick = {
+                    navController.navigate(route = SyncRoute.SyncScreen.route)
+                },
+            ) {
+                Text("Add Device")
+            }
+        }
     }
 }

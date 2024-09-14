@@ -1,21 +1,18 @@
 package com.komu.presentation.sync
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.nsd.NsdServiceInfo
-import android.os.Build
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.komu.sekia.services.Actions
-import com.komu.sekia.services.WebSocketService
+import com.komu.sekia.services.NetworkService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import komu.seki.data.database.Device
 import komu.seki.domain.models.SocketMessage
 import komu.seki.data.services.NsdService
-import komu.seki.data.repository.WebSocketRepositoryImpl
-import komu.seki.domain.models.DeviceInfo
-import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class SyncViewModel @Inject constructor(
+    application: Application,
     private val nsdService: NsdService,
 ) : ViewModel() {
 
@@ -41,6 +39,9 @@ class SyncViewModel @Inject constructor(
             nsdService.startDiscovery()
             delay(1.seconds)
             nsdService.stopDiscovery()
+            if (services.value.isEmpty()) {
+                Toast.makeText(application.applicationContext, "Make sure you're connected to the same network as your PC", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -54,10 +55,10 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val hostAddress = String(serviceInfo.attributes["ipAddress"]!!, Charsets.UTF_8)
-                val intent = Intent(context, WebSocketService::class.java).apply {
+                val intent = Intent(context, NetworkService::class.java).apply {
                     action = Actions.START.name
-                    putExtra(WebSocketService.NEW_DEVICE, true)
-                    putExtra(WebSocketService.EXTRA_HOST_ADDRESS, hostAddress)
+                    putExtra(NetworkService.NEW_DEVICE, true)
+                    putExtra(NetworkService.EXTRA_HOST_ADDRESS, hostAddress)
                 }
                 context.startService(intent)
             } catch (e: Exception) {
@@ -66,7 +67,7 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    fun findServices() {
+    fun findServices(context: Context) {
         viewModelScope.launch {
             _isRefreshing.value = true
             nsdService.startDiscovery()
