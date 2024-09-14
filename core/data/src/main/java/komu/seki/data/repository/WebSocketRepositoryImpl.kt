@@ -81,8 +81,10 @@ class WebSocketRepositoryImpl @Inject constructor(
                 Log.d("message", "sending deviceInfo $deviceInfo")
                 sendMessage(deviceInfo)
             }
-            preferencesRepository.saveLastConnected(hostAddress)
-            preferencesRepository.saveSynStatus(true)
+            scope.launch {
+                preferencesRepository.saveLastConnected(hostAddress)
+                preferencesRepository.saveSynStatus(true)
+            }
             messageHandler = MessageHandler(::sendMessage, playbackRepository, appRepository, hostAddress)
             return true
         } catch (e: Exception) {
@@ -90,6 +92,7 @@ class WebSocketRepositoryImpl @Inject constructor(
             e.printStackTrace()
         }
         return false
+            return false
     }
 
     override suspend fun startListening(onDisconnect: () -> Unit) {
@@ -130,6 +133,8 @@ class WebSocketRepositoryImpl @Inject constructor(
 
     override suspend fun disconnect() {
         Log.d("socket", "Session Closed")
+        MediaSessionManager.release()
         session?.close()
+        preferencesRepository.saveSynStatus(false)
     }
 }
