@@ -43,7 +43,7 @@ fun mediaController(
     mediaSession.setPlaybackState(
         PlaybackStateCompat.Builder()
             .setState(
-                if (playbackData.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
+                if (playbackData.isPlaying == true) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
                 PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f
             )
             .setActions(PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS)
@@ -90,7 +90,6 @@ fun mediaController(
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setOngoing(true)
         .build()
-
     // Notify (update) the existing notification
     notificationManager.notify(notificationId, notification)
 

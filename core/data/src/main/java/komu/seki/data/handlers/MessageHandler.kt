@@ -1,10 +1,11 @@
-package komu.seki.data.repository
+package komu.seki.data.handlers
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.util.Log
 import komu.seki.data.database.Device
+import komu.seki.data.repository.AppRepository
 import komu.seki.data.services.mediaController
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.Command
@@ -16,7 +17,6 @@ import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PlaybackRepository
-import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,6 +27,9 @@ class MessageHandler(
     private val appRepository: AppRepository,
     private val lastConnected: String,
 ) {
+
+
+
     fun handleMessages(context: Context, message: SocketMessage) {
         when (message) {
             is Response -> handleResponse(message)
@@ -35,7 +38,7 @@ class MessageHandler(
             is DeviceInfo -> handleDeviceInfo(message)
             is DeviceStatus -> handleDeviceStatus(message)
             is PlaybackData -> handlePlaybackData(context, message, sendMessage)
-            is FileTransfer -> handleFileTransfer()
+            is FileTransfer -> handleFileTransfer(context, message)
             is Command -> handleCommands()
             else -> {
 
@@ -48,8 +51,10 @@ class MessageHandler(
         TODO("Not yet implemented")
     }
 
-    private fun handleFileTransfer() {
-        TODO("Not yet implemented")
+
+
+    private fun handleFileTransfer(context: Context, message: FileTransfer) {
+        receivingFileHandler(context, message)
     }
 
     private fun handleClipboardMessage(context: Context, clipboardMessage: ClipboardMessage) {

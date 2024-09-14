@@ -1,6 +1,5 @@
 package com.komu.sekia.services
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
@@ -9,17 +8,14 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.util.Base64
+import android.text.SpannableString
 import android.util.Log
-import com.komu.sekia.services.WebSocketService.Companion.ACTION_SEND_ACTIVE_NOTIFICATIONS
-import com.komu.sekia.services.WebSocketService.Companion.ACTION_STOP_NOTIFICATION_SERVICE
+import com.komu.sekia.services.NetworkService.Companion.ACTION_SEND_ACTIVE_NOTIFICATIONS
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.common.util.bitmapToBase64
 import komu.seki.common.util.drawableToBitmap
@@ -34,7 +30,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale.getDefault
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -107,11 +105,18 @@ class NotificationService : NotificationListenerService() {
     }
 
     private fun sendNotification(sbn: StatusBarNotification, rankingMap: RankingMap?, notificationType: NotificationType) {
-
         val notification = sbn.notification
-        // Check if the notification is ongoing
-        if (notification.flags and Notification.FLAG_ONGOING_EVENT != 0 and Notification.FLAG_FOREGROUND_SERVICE) {
-            Log.d("NotificationService", "Skipping ongoing notification: ${sbn.packageName}")
+        val extras = notification.extras
+        // Check for progress-related extras
+        val progress = extras.getInt(Notification.EXTRA_PROGRESS, -1)
+        val maxProgress = extras.getInt(Notification.EXTRA_PROGRESS_MAX, -1)
+        val isIndeterminate = extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false)
+
+        val hasProgress = (progress >= 1 || maxProgress >= 1) || isIndeterminate
+        // Check if the notification is ongoing, media-style, or belongs to the 'progress' category
+        if ((notification.flags and Notification.FLAG_ONGOING_EVENT != 0 && notification.flags and Notification.FLAG_FOREGROUND_SERVICE != 0)
+            || notification.isMediaStyle()
+            || hasProgress) {
             return
         }
 
@@ -145,6 +150,8 @@ class NotificationService : NotificationListenerService() {
                 null
             }
 
+            val notificationKey = sbn.key
+
             // Get the notification large icon
             val largeIcon = notification.getLargeIcon()?.let { icon ->
                 val largeIconBitmap = icon.loadDrawable(context)?.let { (it as BitmapDrawable).bitmap }
@@ -156,8 +163,15 @@ class NotificationService : NotificationListenerService() {
                 bitmapToBase64(pictureBitmap as Bitmap)
             }
 
-            val title = notification.extras.getString(Notification.EXTRA_TITLE)
-            val text = notification.extras.getString(Notification.EXTRA_TEXT)
+            val extras = notification.extras
+
+            // Use the utility function to get text from SpannableString
+            val title = getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_TITLE))
+                ?: getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_TITLE_BIG))
+
+            val text = getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_TEXT))
+                ?: getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_BIG_TEXT))
+                ?: getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT))
 
             val messages = notification.extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.mapNotNull {
                 val bundle = it as? Bundle
@@ -171,11 +185,17 @@ class NotificationService : NotificationListenerService() {
                 }
             } ?: emptyList()
 
+            // Get the timestamp of the notification
+            val timestamp = notification.`when`
+
+            // Convert timestamp to a human-readable format if needed
+            val formattedTimestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", getDefault()).format(Date(timestamp))
+
             val id = notification.extras.getString(Notification.EXTRA_NOTIFICATION_ID)
             val tag = notification.extras.getString(Notification.EXTRA_NOTIFICATION_TAG)
 
-            Log.d("message", "$appName $title $text messages: $messages")
-            Log.d("NotificationService", sbn.toString())
+            Log.d("message", "$appName $title $text messages: $messages $formattedTimestamp")
+            Log.d("NotificationService", notification.toString())
 
             // Retrieve the ranking of the notification
             val ranking = Ranking()
@@ -194,11 +214,13 @@ class NotificationService : NotificationListenerService() {
             }
 
             val notificationMessage = NotificationMessage(
+                notificationKey = notificationKey,
                 appName = appName,
                 title = title,
                 text = text,
                 messages = messages,
                 actions = actions,
+                timestamp = formattedTimestamp,
                 appIcon = appIcon,
                 largeIcon = largeIcon,
                 bigPicture = picture,
@@ -206,6 +228,12 @@ class NotificationService : NotificationListenerService() {
                 groupKey = sbn.groupKey,
                 notificationType = notificationType
             )
+
+            if (notificationMessage.appName == "WhatsApp" && notificationMessage.messages?.isEmpty() == true
+                || notificationMessage.appName == "Spotify" && notificationMessage.timestamp == "1970-01-01 05:30:00") {
+                Log.d("NotificationService", "Duplicate notification, ignoring...")
+                return@launch
+            }
 
             try {
 //                Log.d("NotificationService", "${notificationMessage.appName} ${notificationMessage.title} ${notificationMessage.text} ${notificationMessage.tag} ${notificationMessage.groupKey}")
@@ -218,7 +246,33 @@ class NotificationService : NotificationListenerService() {
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         Log.d("NotificationService", "Notification removed: ${sbn.packageName}")
-        // Handle notification removal if necessary
+
+        val notificationKey = sbn.key
+        val notificationId = sbn.id
+        val notificationTag = sbn.tag
+
+
+        // Send a message to your desktop app to remove the notification
+        val removeNotificationMessage = NotificationMessage(
+            notificationKey = notificationKey,
+            notificationType = NotificationType.REMOVED,
+            tag = notificationTag,
+        )
+
+
+        scope.launch {
+            webSocketRepository.sendMessage(removeNotificationMessage)
+        }
+    }
+    private fun getSpannableText(charSequence: CharSequence?): String? {
+        return when (charSequence) {
+            is SpannableString -> charSequence.toString()
+            else -> charSequence?.toString()
+        }
+    }
+    fun Notification.isMediaStyle(): Boolean {
+        val mediaStyleClassName = "android.app.Notification\$MediaStyle"
+        return mediaStyleClassName == this.extras.getString(Notification.EXTRA_TEMPLATE)
     }
 }
 

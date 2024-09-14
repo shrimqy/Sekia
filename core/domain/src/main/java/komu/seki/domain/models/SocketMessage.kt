@@ -1,6 +1,7 @@
 package komu.seki.domain.models
 
 import android.os.Parcelable
+import android.util.Base64
 import komu.seki.common.models.FileMetadata
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
@@ -9,7 +10,8 @@ import kotlinx.serialization.Serializable
 
 enum class NotificationType {
     ACTIVE,
-    NEW
+    NEW,
+    REMOVED
 }
 enum class MediaAction {
     RESUME,
@@ -25,6 +27,8 @@ enum class CommandType {
     SLEEP,
     HIBERNATE,
 }
+
+enum class Transfer
 
 enum class TransferType {
     WEBSOCKET,
@@ -57,17 +61,19 @@ data class ClipboardMessage(
 @Serializable
 @SerialName("2")
 data class NotificationMessage(
+    val notificationKey: String,
     val notificationType: NotificationType,
-    val appName: String,
-    val title: String?,
-    val text: String?,
-    val messages: List<Message>?,
-    val groupKey: String?,
+    val timestamp: String? = null,
+    val appName: String? = null,
+    val title: String? = null,
+    val text: String? = null,
+    val messages: List<Message>? = emptyList(),
+    val groupKey: String? = null,
     val tag: String?,
-    val appIcon: String?,
-    val largeIcon: String?,
-    val bigPicture: String?,
-    val actions: List<NotificationAction>?,
+    val appIcon: String? = null,
+    val largeIcon: String? = null,
+    val bigPicture: String? = null,
+    val actions: List<NotificationAction>? = emptyList(),
 ) : SocketMessage()
 
 @Serializable

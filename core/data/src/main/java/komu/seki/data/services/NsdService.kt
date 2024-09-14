@@ -91,9 +91,13 @@ class NsdService @Inject constructor(@ApplicationContext private val context: Co
     }
 
     fun stopDiscovery() {
-        Log.d(TAG, "Stopping service discovery")
-        nsdManager.stopServiceDiscovery(discoveryListener)
-        serviceDiscoveryStatus = false
+        if (serviceDiscoveryStatus) {
+            Log.d(TAG, "Stopping service discovery")
+            nsdManager.stopServiceDiscovery(discoveryListener)
+            serviceDiscoveryStatus = false
+        } else {
+            Log.d(TAG, "Service discovery is not running, ignoring stop request")
+        }
     }
 
     fun resolveService(serviceInfo: NsdServiceInfo, resolveListener: NsdManager.ResolveListener) {
