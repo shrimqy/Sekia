@@ -15,13 +15,14 @@
 
 ## Limitations
 
-- **Clipboard Sharing on Android 13+**:
-   - Due to Android's restrictions, clipboard sharing is only possible via the share sheet after Android 13.
+- **Clipboard Sharing on Android**:
+   - Due to Android's restrictions, clipboard sharing is only possible via the share sheet.
+
 ## Installation
 
 ### Android
 1. Get the APK from [Releases](https://github.com/shrimqy/Sekia/releases/tag/v0.1)
-2. Download the Windows App, [**Seki**](https://github.com/shrimqy/Seki): [Microsoft Store](https://apps.microsoft.com/store/detail/9PJV6D1JPG0H?cid=DevShareMCLPCS).
+2. Download the Windows App, [**Seki**](https://github.com/shrimqy/Seki): [Microsoft Store](https://apps.microsoft.com/detail/9PJV6D1JPG0H?launch=true&mode=full).
 
 ## How to Use
 
@@ -36,9 +37,6 @@
    - To share clipboard from android you will have to manually sent it through the share sheet that shows after you perform a copy action).
 3. **File Transfer**:
    - Use the share sheet from android/windows and select the app to share any files between the devices.
-
-
-## Screenshots
 
 ## Screenshots
 
