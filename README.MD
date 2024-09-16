@@ -21,7 +21,7 @@
 ## Installation
 
 ### Android
-1. Get the APK from [Releases](https://github.com/shrimqy/Sekia/releases/tag/v0.1)
+1. Get the APK from [Releases](https://github.com/shrimqy/Sekia/releases)
 2. Download the Windows App, [**Seki**](https://github.com/shrimqy/Seki): [Microsoft Store](https://apps.microsoft.com/detail/9PJV6D1JPG0H?launch=true&mode=full).
 
 ## How to Use
