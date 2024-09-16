@@ -36,12 +36,14 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.komu.sekia.MainActivity
 import com.komu.sekia.R
+import com.komu.sekia.utils.getStorageInfo
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.data.repository.AppRepository
 import komu.seki.data.services.NsdService
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.SocketMessage
+import komu.seki.domain.models.StorageInfo
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
@@ -197,7 +199,6 @@ class NetworkService : Service() {
             while (attempt < maxRetries && !connected) {
                 try {
                     attempt++
-                    val deviceStatus = getDeviceStatus()
                     Log.d("WebSocketService", "Attempt $attempt: Trying to connect")
 
                     // Try to connect, passing deviceInfo if it's a new device
@@ -210,9 +211,8 @@ class NetworkService : Service() {
                         connected = true
                         startListening()
                         preferencesRepository.saveSynStatus(true)
-                        // Send device status and notifications
-                        Log.d("service", deviceStatus.toString())
-                        sendMessage(deviceStatus)
+                        sendMessage(getStorageInfo())
+                        sendMessage(getDeviceStatus())
                         sendActiveNotifications()
                         break
                     } else {

@@ -163,8 +163,6 @@ class NotificationService : NotificationListenerService() {
                 bitmapToBase64(pictureBitmap as Bitmap)
             }
 
-            val extras = notification.extras
-
             // Use the utility function to get text from SpannableString
             val title = getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_TITLE))
                 ?: getSpannableText(notification.extras.getCharSequence(Notification.EXTRA_TITLE_BIG))
@@ -191,9 +189,6 @@ class NotificationService : NotificationListenerService() {
             // Convert timestamp to a human-readable format if needed
             val formattedTimestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", getDefault()).format(Date(timestamp))
 
-            val id = notification.extras.getString(Notification.EXTRA_NOTIFICATION_ID)
-            val tag = notification.extras.getString(Notification.EXTRA_NOTIFICATION_TAG)
-
             Log.d("message", "$appName $title $text messages: $messages $formattedTimestamp")
             Log.d("NotificationService", notification.toString())
 
@@ -207,11 +202,24 @@ class NotificationService : NotificationListenerService() {
 
             // Retrieve the actions from the notification
             val actions = notification.actions?.map { action ->
-                NotificationAction(
-                    label = action.title.toString(),
-                    actionId = action.actionIntent.toString()
-                )
-            }
+                try {
+                    // Extract action label and intent if they exist
+                    val actionLabel = action.title?.toString() ?: "Unknown Action"
+                    val actionIntent = action.actionIntent?.toString() ?: "No Action Intent"
+
+                    Log.d("NotificationService", "Found action: $actionLabel with intent: $actionIntent")
+
+                    // Return a new NotificationAction object with the label and intent
+                    NotificationAction(
+                        label = actionLabel,
+                        actionId = actionIntent
+                    )
+                } catch (e: Exception) {
+                    // Log any error that occurs while processing the actions
+                    Log.e("NotificationService", "Error retrieving action: ${e.localizedMessage}")
+                    null
+                }
+            } ?: emptyList()
 
             val notificationMessage = NotificationMessage(
                 notificationKey = notificationKey,

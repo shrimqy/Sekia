@@ -1,11 +1,13 @@
 package com.komu.sekia
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -33,13 +35,14 @@ class MainActivity : BaseActivity() {
     private val viewModel by viewModels<MainViewModel>()
 
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.all { it.value }) {
-            viewModel.startWebSocketService(this)
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        val deniedPermissions = permissions.filter { !it.value }.keys
+        if (deniedPermissions.isNotEmpty()) {
+            deniedPermissions.forEach { permission ->
+                showPermissionExplanationDialog(permission)
+            }
         } else {
-            showPermissionExplanationDialog()
+            viewModel.startWebSocketService(this)
         }
     }
 
@@ -69,13 +72,23 @@ class MainActivity : BaseActivity() {
         val permissions = mutableListOf(
             android.Manifest.permission.ACCESS_WIFI_STATE,
             android.Manifest.permission.ACCESS_NETWORK_STATE,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
         )
 
+        // Add notification permissions for Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        permissions.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+
+            if (!Environment.isExternalStorageManager()) {
+                showPermissionExplanationDialog(android.Manifest.permission.MANAGE_EXTERNAL_STORAGE)
+                return
+            }
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) { // Android 10 and below
+            permissions.add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            permissions.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
 
         val permissionsToRequest = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
@@ -88,14 +101,39 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    private fun showPermissionExplanationDialog() {
+    @SuppressLint("InlinedApi")
+    private fun showPermissionExplanationDialog(permission: String) {
+        val title: String
+        val message: String
+        val settingsIntent: Intent
+
+        when (permission) {
+            android.Manifest.permission.MANAGE_EXTERNAL_STORAGE -> {
+                title = "Storage Access Required"
+                message = "This app needs access to manage all files on your device. Please grant this permission in your device's settings."
+                settingsIntent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+            }
+            android.Manifest.permission.POST_NOTIFICATIONS -> {
+                title = "Notification Access Required"
+                message = "This app needs access to notifications. Please grant this permission in your device's settings."
+                settingsIntent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                }
+            }
+            else -> {
+                title = "Permissions Required"
+                message = "This app requires access to some permissions to function properly. Please grant the necessary permissions."
+                settingsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+            }
+        }
+
         AlertDialog.Builder(this)
-            .setTitle("Permissions Required")
-            .setMessage("This app requires access to Wi-Fi and location information to function properly. Please grant the necessary permissions.")
+            .setTitle(title)
+            .setMessage(message)
             .setPositiveButton("Open Settings") { _, _ ->
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                intent.data = Uri.fromParts("package", packageName, null)
-                startActivity(intent)
+                startActivity(settingsIntent)
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()

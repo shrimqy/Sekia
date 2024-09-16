@@ -1,7 +1,6 @@
 package komu.seki.domain.models
 
 import android.os.Parcelable
-import android.util.Base64
 import komu.seki.common.models.FileMetadata
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
@@ -73,7 +72,7 @@ data class NotificationMessage(
     val appIcon: String? = null,
     val largeIcon: String? = null,
     val bigPicture: String? = null,
-    val actions: List<NotificationAction>? = emptyList(),
+    val actions: List<NotificationAction?> = emptyList(),
 ) : SocketMessage()
 
 @Serializable
@@ -134,3 +133,19 @@ data class FileTransfer(
     val chunkData: String? = null,
 ) : SocketMessage()
 
+@Serializable
+@SerialName("8")
+data class StorageInfo(
+    val totalSpace: Long,
+    val freeSpace: Long,
+    val usedSpace: Long,
+) : SocketMessage()
+
+@Serializable
+@SerialName("9")
+data class DirectoryInfo(
+    val path: String,
+    val name: String,
+    val isDirectory: Boolean,
+    val size: String?
+) : SocketMessage()
