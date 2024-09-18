@@ -25,8 +25,9 @@ enum class CommandType {
     SHUTDOWN,
     SLEEP,
     HIBERNATE,
-    MIRROR
 }
+
+enum class Transfer
 
 enum class TransferType {
     WEBSOCKET,
@@ -148,58 +149,3 @@ data class DirectoryInfo(
     val isDirectory: Boolean,
     val size: String?
 ) : SocketMessage()
-
-@Serializable
-@SerialName("10")
-data class ScreenMirrorData(
-    val data: String,
-    val timestamp: Long
-) : SocketMessage()
-
-@Serializable
-@SerialName("11")
-data class InteractiveControlMessage(
-    val control: InteractiveControl
-) : SocketMessage()
-
-@Serializable
-sealed class InteractiveControl {
-    @Serializable
-    @SerialName("MOUSE")
-    data class Mouse(
-        val x: Double,
-        val y: Double
-    ) : InteractiveControl()
-
-    @Serializable
-    @SerialName("KEYBOARD")
-    data class Keyboard(
-        val action: Int, // KeyEvent.ACTION_DOWN, ACTION_UP
-        val keyCode: Int,
-        val metaState: Int // Shift, Ctrl, Alt, etc.
-    ) : InteractiveControl()
-
-    @Serializable
-    @SerialName("SCROLL")
-    data class Scroll(
-        val deltaX: Float,
-        val deltaY: Float
-    ) : InteractiveControl()
-
-    @Serializable
-    @SerialName("SWIPE")
-    data class Swipe(
-        val direction: SwipeDirection,
-        val velocity: Float
-    ) : InteractiveControl()
-
-    @Serializable
-    @SerialName("TEXT_INPUT")
-    data class TextInput(
-        val text: String
-    ) : InteractiveControl()
-}
-
-enum class SwipeDirection {
-    LEFT, RIGHT, UP, DOWN
-}

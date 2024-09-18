@@ -13,8 +13,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
@@ -70,15 +68,8 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
-        <activity android:name="komu.seki.data.services.PermissionRequestActivity"
-            android:launchMode="singleTask"
-            android:theme="@style/Theme.AppCompat"
-            android:label="Permission Request"
-            android:excludeFromRecents="true"/>
-
 
         <service android:name=".services.NetworkService" android:foregroundServiceType="dataSync"/>
-        <service android:name="komu.seki.data.services.ScreenMirrorService" android:foregroundServiceType="mediaProjection"/>
         <service android:name=".services.NotificationService"
             android:label="@string/app_name"
             android:exported="false"
