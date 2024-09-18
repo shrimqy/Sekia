@@ -3,15 +3,19 @@ package komu.seki.data.handlers
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import komu.seki.data.database.Device
 import komu.seki.data.repository.AppRepository
+import komu.seki.data.services.PermissionRequestActivity
 import komu.seki.data.services.mediaController
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.Command
+import komu.seki.domain.models.CommandType
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.FileTransfer
+import komu.seki.domain.models.InteractiveControlMessage
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.PlaybackData
 import komu.seki.domain.models.Response
@@ -28,8 +32,6 @@ class MessageHandler(
     private val lastConnected: String,
 ) {
 
-
-
     fun handleMessages(context: Context, message: SocketMessage) {
         when (message) {
             is Response -> handleResponse(message)
@@ -39,16 +41,34 @@ class MessageHandler(
             is DeviceStatus -> handleDeviceStatus(message)
             is PlaybackData -> handlePlaybackData(context, message, sendMessage)
             is FileTransfer -> handleFileTransfer(context, message)
-            is Command -> handleCommands()
+            is Command -> handleCommands(context, message)
+            is InteractiveControlMessage -> handleInteractiveControlMessage(context, message)
             else -> {
 
             }
         }
-
     }
 
-    private fun handleCommands() {
-        TODO("Not yet implemented")
+    private fun handleInteractiveControlMessage(
+        context: Context,
+        message: InteractiveControlMessage
+    ) {
+        screenHandler(context, message)
+    }
+
+
+
+    private fun handleCommands(context: Context, message: Command) {
+        Log.d("Command", message.toString())
+        when (message.commandType) {
+            CommandType.MIRROR -> {
+                Log.d("Handle", "Starting permission activity")
+                val intent = Intent(context, PermissionRequestActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+            }
+            else -> { }
+        }
     }
 
 
