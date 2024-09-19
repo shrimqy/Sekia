@@ -1,16 +1,23 @@
 package com.komu.sekia
 
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.AlertDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.text.TextUtils
+import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
@@ -33,7 +40,6 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : BaseActivity() {
     private val viewModel by viewModels<MainViewModel>()
-
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
         val deniedPermissions = permissions.filter { !it.value }.keys
@@ -72,7 +78,8 @@ class MainActivity : BaseActivity() {
         val permissions = mutableListOf(
             android.Manifest.permission.ACCESS_WIFI_STATE,
             android.Manifest.permission.ACCESS_NETWORK_STATE,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+
         )
 
         // Add notification permissions for Android 13+
@@ -97,8 +104,34 @@ class MainActivity : BaseActivity() {
         if (permissionsToRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
         } else {
+            if (!isAccessibilityServiceEnabled()) {
+                showAccessibilityServiceDialog()
+            } else {
+                viewModel.startWebSocketService(this)
+            }
             viewModel.startWebSocketService(this)
         }
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val accessibilityManager = applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val enabledServices = accessibilityManager.getEnabledAccessibilityServiceList(
+            AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+        return enabledServices.any { it.id.contains(applicationContext.packageName + "/.ScreenHandler") }
+    }
+
+    private fun showAccessibilityServiceDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Accessibility Service Required")
+            .setMessage("This app needs accessibility service access. Please enable it in the settings.")
+            .setPositiveButton("Open Settings") { _, _ ->
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                startActivity(intent)
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     @SuppressLint("InlinedApi")
@@ -165,4 +198,5 @@ class MainActivity : BaseActivity() {
             }
             .show()
     }
+
 }

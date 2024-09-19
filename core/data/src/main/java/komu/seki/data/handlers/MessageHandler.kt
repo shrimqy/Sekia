@@ -15,6 +15,7 @@ import komu.seki.domain.models.CommandType
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.FileTransfer
+import komu.seki.domain.models.InteractiveControl
 import komu.seki.domain.models.InteractiveControlMessage
 import komu.seki.domain.models.NotificationMessage
 import komu.seki.domain.models.PlaybackData
@@ -42,18 +43,32 @@ class MessageHandler(
             is PlaybackData -> handlePlaybackData(context, message, sendMessage)
             is FileTransfer -> handleFileTransfer(context, message)
             is Command -> handleCommands(context, message)
-            is InteractiveControlMessage -> handleInteractiveControlMessage(context, message)
+            is InteractiveControlMessage -> handleInteractiveControlMessage(message)
             else -> {
 
             }
         }
     }
 
-    private fun handleInteractiveControlMessage(
-        context: Context,
-        message: InteractiveControlMessage
-    ) {
-        screenHandler(context, message)
+    private fun handleInteractiveControlMessage(message: InteractiveControlMessage) {
+        Log.d("MessageHandler", "Handling InteractiveControlMessage")
+        val screenHandler = ScreenHandler.getInstance()
+        if (screenHandler == null) {
+            Log.e("MessageHandler", "ScreenHandler is not initialized")
+        } else {
+            Log.d("MessageHandler", "ScreenHandler instance found")
+            when(val control = message.control) {
+                is InteractiveControl.SingleTap -> {
+                    Log.d("MessageHandler", "Mouse control: x=${control.x}, y=${control.y}")
+                    screenHandler.performTap(control)
+                }
+
+                is InteractiveControl.HoldTap -> screenHandler.performHoldTap(control)
+                is InteractiveControl.KeyboardEvent -> TODO()
+                is InteractiveControl.ScrollEvent -> screenHandler.performScroll(control)
+                is InteractiveControl.SwipeEvent -> screenHandler.performSwipe(control)
+            }
+        }
     }
 
 

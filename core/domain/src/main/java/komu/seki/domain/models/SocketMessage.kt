@@ -5,6 +5,7 @@ import komu.seki.common.models.FileMetadata
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Year
 
 
 enum class NotificationType {
@@ -163,41 +164,49 @@ data class InteractiveControlMessage(
 @Serializable
 sealed class InteractiveControl {
     @Serializable
-    @SerialName("MOUSE")
-    data class Mouse(
+    @SerialName("SINGLE")
+    data class SingleTap(
         val x: Double,
-        val y: Double
+        val y: Double,
+        val frameWidth: Double,
+        val frameHeight: Double
+    ) : InteractiveControl()
+
+    @Serializable
+    @SerialName("HOLD")
+    data class HoldTap(
+        val x: Double,
+        val y: Double,
+        val frameWidth: Double,
+        val frameHeight: Double
     ) : InteractiveControl()
 
     @Serializable
     @SerialName("KEYBOARD")
-    data class Keyboard(
-        val action: Int, // KeyEvent.ACTION_DOWN, ACTION_UP
+    data class KeyboardEvent(
+        val action: Int?, // KeyEvent.ACTION_DOWN, ACTION_UP
         val keyCode: Int,
-        val metaState: Int // Shift, Ctrl, Alt, etc.
+        val metaState: Int? // Shift, Ctrl, Alt, etc.
     ) : InteractiveControl()
 
     @Serializable
     @SerialName("SCROLL")
-    data class Scroll(
-        val deltaX: Float,
-        val deltaY: Float
+    data class ScrollEvent(
+        val direction: ScrollDirection
     ) : InteractiveControl()
 
     @Serializable
     @SerialName("SWIPE")
-    data class Swipe(
-        val direction: SwipeDirection,
-        val velocity: Float
-    ) : InteractiveControl()
-
-    @Serializable
-    @SerialName("TEXT_INPUT")
-    data class TextInput(
-        val text: String
+    data class SwipeEvent(
+        val startX: Double,
+        val startY: Double,
+        val endX: Double,
+        val endY: Double,
+        val frameWidth: Double,
+        val frameHeight: Double
     ) : InteractiveControl()
 }
 
-enum class SwipeDirection {
-    LEFT, RIGHT, UP, DOWN
+enum class ScrollDirection {
+    UP, DOWN
 }
