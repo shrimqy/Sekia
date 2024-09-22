@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.text.TextUtils
+import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,6 +37,7 @@ import com.komu.sekia.navigation.graphs.RootNavGraph
 import com.komu.sekia.ui.base.BaseActivity
 import com.komu.sekia.ui.theme.SekiraTheme
 import dagger.hilt.android.AndroidEntryPoint
+import komu.seki.data.handlers.ScreenHandler
 
 @AndroidEntryPoint
 class MainActivity : BaseActivity() {
@@ -55,8 +57,10 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkAndRequestPermissions()
-        viewModel.startWebSocketService(this)
         checkNotificationListenerPermission()
+        checkAccessibility()
+        checkStoragePermission()
+        viewModel.startWebSocketService(this)
         installSplashScreen().apply {
             setKeepOnScreenCondition { viewModel.splashCondition }
         }
@@ -79,7 +83,6 @@ class MainActivity : BaseActivity() {
             android.Manifest.permission.ACCESS_WIFI_STATE,
             android.Manifest.permission.ACCESS_NETWORK_STATE,
             android.Manifest.permission.ACCESS_FINE_LOCATION,
-
         )
 
         // Add notification permissions for Android 13+
@@ -87,12 +90,7 @@ class MainActivity : BaseActivity() {
             permissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+
-            if (!Environment.isExternalStorageManager()) {
-                showPermissionExplanationDialog(android.Manifest.permission.MANAGE_EXTERNAL_STORAGE)
-                return
-            }
-        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) { // Android 10 and below
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) { // Android 10 and below
             permissions.add(android.Manifest.permission.READ_EXTERNAL_STORAGE)
             permissions.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
@@ -103,35 +101,31 @@ class MainActivity : BaseActivity() {
 
         if (permissionsToRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
-        } else {
-            if (!isAccessibilityServiceEnabled()) {
-                showAccessibilityServiceDialog()
-            } else {
-                viewModel.startWebSocketService(this)
+        }
+    }
+
+    private fun checkAccessibility() {
+        if (!isAccessibilityServiceEnabled()) {
+            showPermissionExplanationDialog(android.Manifest.permission.BIND_ACCESSIBILITY_SERVICE)
+        }
+    }
+
+    private fun checkStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11+
+            if (!Environment.isExternalStorageManager()) {
+                showPermissionExplanationDialog(android.Manifest.permission.MANAGE_EXTERNAL_STORAGE)
+                return
             }
-            viewModel.startWebSocketService(this)
         }
     }
 
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val accessibilityManager = applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val enabledServices = accessibilityManager.getEnabledAccessibilityServiceList(
-            AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-        return enabledServices.any { it.id.contains(applicationContext.packageName + "/.ScreenHandler") }
-    }
-
-    private fun showAccessibilityServiceDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Accessibility Service Required")
-            .setMessage("This app needs accessibility service access. Please enable it in the settings.")
-            .setPositiveButton("Open Settings") { _, _ ->
-                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                startActivity(intent)
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+        val accessibilityServiceName = "${packageName}/${ScreenHandler::class.java.canonicalName}"
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        )
+        return enabledServices?.contains(accessibilityServiceName) == true
     }
 
     @SuppressLint("InlinedApi")
@@ -153,6 +147,12 @@ class MainActivity : BaseActivity() {
                     putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                 }
             }
+            android.Manifest.permission.BIND_ACCESSIBILITY_SERVICE -> {
+                title = "Accessibility Service Required"
+                message = "This app needs accessibility service access for simulating gestures when casting. Please enable it in the settings."
+                settingsIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            }
+
             else -> {
                 title = "Permissions Required"
                 message = "This app requires access to some permissions to function properly. Please grant the necessary permissions."
