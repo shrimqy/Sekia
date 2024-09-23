@@ -32,9 +32,8 @@ private var currentFileMetadata: FileMetadata? = null
 
 var uri: Uri? = null
 
-fun receivingFileHandler(context: Context, message: FileTransfer){
-    val notificationManager =
-        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+fun receivingFileHandler(context: Context, message: FileTransfer) {
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val notificationId = 4159
 
     val totalFileSize = currentFileMetadata?.fileSize ?: 0L // Total file size for progress
@@ -50,7 +49,7 @@ fun receivingFileHandler(context: Context, message: FileTransfer){
                 // Prepare the content values
                 val values = ContentValues().apply {
                     put(MediaStore.Downloads.DISPLAY_NAME, metadata.fileName)
-                    put(MediaStore.Downloads.MIME_TYPE, metadata.mimeType ?: "*/*") // Use MIME type if available
+                    put(MediaStore.Downloads.MIME_TYPE, metadata.mimeType ?: "*/*")
                     put(MediaStore.Downloads.RELATIVE_PATH, "Download/")
                 }
 
@@ -63,6 +62,7 @@ fun receivingFileHandler(context: Context, message: FileTransfer){
                         currentFileOutputStream = contentResolver.openOutputStream(uri!!)
                         Log.d("FileTransfer", "Receiving file: ${metadata.fileName}")
                         bytesReceived = 0L // Reset bytes received counter
+
                         // Initialize the notification with 0 progress
                         val notification = createProgressNotification(context, metadata.fileName, 0, 100)
                         notificationManager.notify(notificationId, notification)
@@ -73,7 +73,6 @@ fun receivingFileHandler(context: Context, message: FileTransfer){
             }
         }
         DataTransferType.CHUNK -> {
-            // Receive a chunk of file data
             currentFileOutputStream?.let { outputStream ->
                 message.chunkData?.let { chunkBase64 ->
                     try {
@@ -83,22 +82,65 @@ fun receivingFileHandler(context: Context, message: FileTransfer){
 
                         // Update progress percentage
                         progress = if (totalFileSize > 0) ((bytesReceived * 100) / totalFileSize).toInt() else 0
-                        Log.d("FileTransfer", "Received chunk of ${chunk.size} bytes (Total: $bytesReceived bytes)")
+
+                        // Log only the progress percentage
+                        Log.d("FileTransfer", "Progress: $progress%")
 
                         // Update the notification with progress
-                        val notification = createProgressNotification(context, currentFileMetadata?.fileName ?: "File", progress, 100)
+                        val notification = createProgressNotification(
+                            context, currentFileMetadata?.fileName ?: "File", progress, 100
+                        )
                         notificationManager.notify(notificationId, notification)
 
-                        // If there is a pending completion message, check if the file is fully received
-                        checkAndCompleteFileTransfer(context)
+                        // If the file transfer is complete, finalize the transfer
+                        if (bytesReceived >= totalFileSize) {
+                            outputStream.flush()
+                            // Cancel the progress notification
+                            notificationManager.cancel(notificationId)
+                            // Show completion notification
+                            showCompletionNotification(context, currentFileMetadata?.fileName ?: "File", uri)
+                            // Handle completion logic
+                            checkAndCompleteFileTransfer(context)
+                        } else {
+                            return
+                        }
                     } catch (e: IOException) {
                         Log.e("FileTransfer", "Error writing chunk: ${e.message}")
                     }
                 } ?: Log.e("FileTransfer", "Chunk data is null")
             } ?: Log.e("FileTransfer", "Output stream is null")
         }
-        else -> { return }
+        else -> {
+            return
+        }
     }
+}
+
+fun showCompletionNotification(context: Context, fileName: String, uri: Uri?) {
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    // Create an intent to view the file using a file manager or other apps
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, "*/*") // Use MIME type if available
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+    }
+
+    val pendingIntent = PendingIntent.getActivity(
+        context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    // Build the notification to show file transfer completion
+    val completedNotification = NotificationCompat.Builder(context, "fileTransfer_channel")
+        .setContentTitle("File transfer completed")
+        .setContentText("Tap to view the file.")
+        .setSmallIcon(com.komu.seki.core.common.R.drawable.ic_splash)
+        .setContentIntent(pendingIntent) // Intent to open file location
+        .setAutoCancel(true) // Remove the notification once tapped
+        .build()
+
+    // Display the completion notification
+    notificationManager.notify(4951, completedNotification)
+    Log.d("FileTransfer", "File transfer completed successfully: $fileName")
 }
 
 fun createProgressNotification(context: Context, fileName: String, progress: Int, maxProgress: Int): Notification {
@@ -134,33 +176,6 @@ private fun checkAndCompleteFileTransfer(context: Context) {
             currentFileOutputStream?.let {
                 try {
                     it.close()
-                    val mimeType = metadata.mimeType ?: "*/*" // Use actual MIME type or fallback
-
-                    // Create an intent to view the file using a file manager or other apps
-                    val intent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, mimeType)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    }
-
-                    val pendingIntent = PendingIntent.getActivity(
-                        context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-
-                    // Build the notification to show file transfer completion
-                    val completedNotification = NotificationCompat.Builder(context, "fileTransfer_channel")
-                        .setContentTitle("File transfer completed")
-                        .setContentText("Tap to view the file.")
-                        .setSmallIcon(com.komu.seki.core.common.R.drawable.ic_splash)
-                        .setContentIntent(pendingIntent) // Intent to open file location
-                        .setAutoCancel(true) // Remove the notification once tapped
-                        .build()
-
-                    // Display the notification
-                    val notificationManager =
-                        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.notify(4159, completedNotification)
-
-                    Log.d("FileTransfer", "File transfer completed successfully: ${metadata.fileName}")
                 } catch (e: IOException) {
                     Log.e("FileTransfer", "Error closing stream: ${e.message}")
                 } finally {
