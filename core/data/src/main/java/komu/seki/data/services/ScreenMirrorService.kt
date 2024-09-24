@@ -139,7 +139,7 @@ class ScreenMirrorService : Service(){
                     )
                     bitmap.copyPixelsFromBuffer(buffer)
                     // Compress the bitmap to JPEG format for consistent transfer
-                    CoroutineScope(Dispatchers.IO).launch {
+                    scope.launch {
                         webSocketRepository.sendMessage(ScreenData(System.currentTimeMillis()))
                         // Compress and send the bitmap in a background thread
                         val byteArrayOutputStream = ByteArrayOutputStream()

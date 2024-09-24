@@ -307,7 +307,7 @@ class NetworkService : Service() {
                         val ssid = wifiInfo.ssid.removeSurrounding("\"")
                         Log.d("NetworkService", "SSID changed to: $ssid")
                         val knownNetwork = appRepository.getNetwork(ssid)
-                        if (knownNetwork != null) {
+                        if (knownNetwork != null && !isConnected) {
                             startNSDDiscovery()
                         }
                     }
