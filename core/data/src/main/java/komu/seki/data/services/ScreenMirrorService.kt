@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
@@ -20,7 +21,7 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.data.R
-import komu.seki.domain.models.ScreenMirrorData
+import komu.seki.domain.models.ScreenData
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
+import java.sql.Time
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -51,40 +53,49 @@ class ScreenMirrorService : Service(){
         }
     }
 
+    private var serviceStarted = false
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP_SCREEN_CAPTURE -> {
-                stopScreenCapture()
-                return START_NOT_STICKY
+                if (serviceStarted){
+                    stopScreenCapture()
+                    return START_NOT_STICKY
+                }
+            }
+            ACTION_START_SCREEN_CAPTURE -> {
+                if (!serviceStarted) {
+                    // Retrieve the extras from the Intent
+
+                    try {
+                        // Create the notification and start the service in the foreground
+                        startForeground(345, createNotification())
+                        serviceStarted = true
+                        Log.d("ScreenMirrorService", "Service started in foreground")
+
+                        val resultCode = intent.getIntExtra("resultCode", 0)
+                        val data = intent.getParcelableExtra<Intent>("data")
+
+                        if (resultCode == 0 || data == null) {
+                            Log.e("ScreenMirrorService", "Invalid intent extras: resultCode=$resultCode, data=$data")
+                            return START_NOT_STICKY
+                        }
+
+                        Log.d("ScreenMirrorService", "Intent extras retrieved successfully")
+
+                        val mediaProjectionManager = getSystemService(MediaProjectionManager::class.java)
+                        mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data)
+                        mediaProjection.registerCallback(mediaProjectionCallback, null)
+                        Log.d("ScreenMirrorService", "MediaProjection created")
+                        startScreenCapture()
+
+                    } catch (e: Exception) {
+                        Log.e("ScreenMirrorService", "Error in onStartCommand", e)
+                    }
+                }
             }
         }
-        try {
-            // Create the notification and start the service in the foreground
-            startForeground(345, createNotification())
-            Log.d("ScreenMirrorService", "Service started in foreground")
-
-            // Retrieve the extras from the Intent
-            val resultCode = intent?.getIntExtra("resultCode", 0)
-            val data = intent?.getParcelableExtra<Intent>("data")
-
-            if (resultCode == null || resultCode == 0 || data == null) {
-                Log.e("ScreenMirrorService", "Invalid intent extras: resultCode=$resultCode, data=$data")
-                return START_NOT_STICKY
-            }
-
-            Log.d("ScreenMirrorService", "Intent extras retrieved successfully")
-
-            val mediaProjectionManager = getSystemService(MediaProjectionManager::class.java)
-            mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data)
-            mediaProjection.registerCallback(mediaProjectionCallback, null)
-            Log.d("ScreenMirrorService", "MediaProjection created")
-
-            startScreenCapture()
-        } catch (e: Exception) {
-            Log.e("ScreenMirrorService", "Error in onStartCommand", e)
-        }
-
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun startScreenCapture() {
@@ -121,24 +132,24 @@ class ScreenMirrorService : Service(){
                     val rowStride = planes[0].rowStride
                     val rowPadding = rowStride - pixelStride * screenWidth
 
-                    // Create bitmap
-                    val bitmap = android.graphics.Bitmap.createBitmap(
+                    // Create a Bitmap from the ImageReader planes
+                    val bitmap = Bitmap.createBitmap(
                         screenWidth + rowPadding / pixelStride, screenHeight,
-                        android.graphics.Bitmap.Config.ARGB_8888
+                        Bitmap.Config.ARGB_8888
                     )
                     bitmap.copyPixelsFromBuffer(buffer)
-
-                    // Compress bitmap to JPEG
-                    val outputStream = ByteArrayOutputStream()
-                    bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, outputStream)
-                    val byteArray = outputStream.toByteArray()
-
-                    // Convert byteArray to Base64 string
-                    val base64String = android.util.Base64.encodeToString(byteArray, android.util.Base64.DEFAULT)
-
-                    webSocketRepository.sendMessage(ScreenMirrorData(base64String, System.currentTimeMillis()))
+                    // Compress the bitmap to JPEG format for consistent transfer
+                    CoroutineScope(Dispatchers.IO).launch {
+                        webSocketRepository.sendMessage(ScreenData(System.currentTimeMillis()))
+                        // Compress and send the bitmap in a background thread
+                        val byteArrayOutputStream = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 30, byteArrayOutputStream)
+                        val compressedBytes = byteArrayOutputStream.toByteArray()
+                        webSocketRepository.sendBinary(compressedBytes)
+                    }
+                    img.close()
                 }
-                delay(33) // ~30 FPS
+                delay(33) //
             }
         }
     }
@@ -193,9 +204,10 @@ class ScreenMirrorService : Service(){
 
         val notificationBuilder = NotificationCompat.Builder(this, notificationChannelId)
             .setContentTitle("Screen Mirroring")
-            .setContentText("Screen mirroring is active")
+            .setContentText("Sharing your screen with pc")
             .setSmallIcon(com.komu.seki.core.common.R.drawable.ic_splash)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
 
         return notificationBuilder.build()
@@ -203,6 +215,7 @@ class ScreenMirrorService : Service(){
 
     companion object {
         const val ACTION_STOP_SCREEN_CAPTURE = "com.komu.seki.ACTION_STOP_SCREEN_CAPTURE"
+        const val ACTION_START_SCREEN_CAPTURE = "com.komu.seki.ACTION_START_SCREEN_CAPTURE"
     }
 
 }

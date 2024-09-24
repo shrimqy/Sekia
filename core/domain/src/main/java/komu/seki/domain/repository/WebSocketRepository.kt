@@ -8,4 +8,5 @@ interface WebSocketRepository {
     suspend fun startListening(onDisconnect: () -> Unit)
     suspend fun disconnect()
     suspend fun sendMessage(message: SocketMessage)
+    suspend fun sendBinary(message: ByteArray)
 }
