@@ -102,9 +102,11 @@
 
         <receiver
             android:exported="false"
-            android:name=".services.NotificationService$ActiveNotificationsBroadcastReceiver">
+            android:name="komu.seki.data.services.NotificationService$NotificationsBroadcastReceiver">
             <intent-filter>
                 <action android:name="com.komu.sekia.services.NotificationService.SEND_ACTIVE_NOTIFICATIONS" />
+                <action android:name="com.komu.sekia.services.NotificationService.REMOVE_NOTIFICATION" />
+                <action android:name="com.komu.sekia.services.NotificationService.CLEAR_NOTIFICATIONS" />
             </intent-filter>
         </receiver>
     </application>

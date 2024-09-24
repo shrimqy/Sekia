@@ -38,6 +38,8 @@ import com.komu.sekia.MainActivity
 import com.komu.sekia.R
 import com.komu.sekia.utils.getStorageInfo
 import dagger.hilt.android.AndroidEntryPoint
+import komu.seki.common.util.Constants.ACTION_SEND_ACTIVE_NOTIFICATIONS
+import komu.seki.common.util.Constants.ACTION_STOP_NOTIFICATION_SERVICE
 import komu.seki.data.repository.AppRepository
 import komu.seki.data.services.NsdService
 import komu.seki.domain.models.DeviceInfo

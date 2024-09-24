@@ -115,6 +115,12 @@ class MessageHandler(
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
             }
+            CommandType.CLEAR_NOTIFICATIONS -> {
+                val intent = Intent(ACTION_CLEAR_NOTIFICATIONS).also {
+                    it.setPackage(context.packageName)
+                }
+                context.sendBroadcast(intent)
+            }
             else -> { }
         }
     }
@@ -154,8 +160,17 @@ class MessageHandler(
         Log.d(response.resType, response.content)
     }
 
-    private fun handleNotificationMessage(notificationMessage: NotificationMessage) {
-        TODO("Not yet implemented")
+    private fun handleNotificationMessage(context: Context, notificationMessage: NotificationMessage) {
+        when(notificationMessage.notificationType) {
+            NotificationType.REMOVED -> {
+                val intent = Intent(ACTION_REMOVE_NOTIFICATION).also {
+                    it.putExtra(NOTIFICATION_ID, notificationMessage.notificationKey)
+                    it.setPackage(context.packageName)
+                }
+                context.sendBroadcast(intent)
+            }
+            else -> { return }
+        }
     }
 
     private fun handleDeviceInfo(deviceInfo: DeviceInfo) {

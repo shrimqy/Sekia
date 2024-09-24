@@ -1,4 +1,4 @@
-package com.komu.sekia.services
+package komu.seki.data.services
 
 import android.app.Notification
 import android.app.NotificationManager
@@ -15,8 +15,12 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.text.SpannableString
 import android.util.Log
-import com.komu.sekia.services.NetworkService.Companion.ACTION_SEND_ACTIVE_NOTIFICATIONS
 import dagger.hilt.android.AndroidEntryPoint
+import komu.seki.common.util.Constants.ACTION_CLEAR_NOTIFICATIONS
+import komu.seki.common.util.Constants.ACTION_REMOVE_NOTIFICATION
+import komu.seki.common.util.Constants.ACTION_SEND_ACTIVE_NOTIFICATIONS
+import komu.seki.common.util.Constants.ACTION_STOP_NOTIFICATION_SERVICE
+import komu.seki.common.util.Constants.NOTIFICATION_ID
 import komu.seki.common.util.bitmapToBase64
 import komu.seki.common.util.drawableToBitmap
 import komu.seki.domain.models.Message
@@ -43,28 +47,47 @@ class NotificationService : NotificationListenerService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    class ActiveNotificationsBroadcastReceiver : BroadcastReceiver() {
+    class NotificationsBroadcastReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 ACTION_SEND_ACTIVE_NOTIFICATIONS -> {
                     val service = context as? NotificationService
                     service?.sendActiveNotifications()
                 }
+
+                ACTION_REMOVE_NOTIFICATION -> {
+                    Log.d("Notification", "Notification Remove Action Received")
+                    val notificationId = intent.getStringExtra(NOTIFICATION_ID)
+                    Log.d("NotificationService", "Notification to remove: $notificationId")
+                    val service = context as? NotificationService
+                    service?.removeNotification(notificationId)
+                }
+
+                ACTION_CLEAR_NOTIFICATIONS -> {
+                    val service = context as? NotificationService
+                    service?.cancelAllNotifications()
+                }
             }
         }
     }
 
-    private val broadcastReceiver = ActiveNotificationsBroadcastReceiver()
+    private val broadcastReceiver = NotificationsBroadcastReceiver()
 
     override fun onCreate() {
         super.onCreate()
         Log.d("NotificationService", "Service created")
-        val filter = IntentFilter(ACTION_SEND_ACTIVE_NOTIFICATIONS)
+        val filter = IntentFilter().apply {
+            addAction(ACTION_SEND_ACTIVE_NOTIFICATIONS)
+            addAction(ACTION_REMOVE_NOTIFICATION)
+            addAction(ACTION_CLEAR_NOTIFICATIONS)
+            addAction(ACTION_STOP_NOTIFICATION_SERVICE)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(broadcastReceiver, filter, RECEIVER_NOT_EXPORTED)
         } else {
             val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS)
-            intent.setClassName(this, "com.komu.sekia.services.NotificationService\$ActiveNotificationsBroadcastReceiver")
+            intent.setClassName(this, "komu.seki.data.services.NotificationService\$NotificationsBroadcastReceiver")
             sendBroadcast(intent)
         }
     }
@@ -252,6 +275,15 @@ class NotificationService : NotificationListenerService() {
         }
     }
 
+    fun removeNotification(notificationId: String?) {
+        try {
+            cancelNotification(notificationId)
+            Log.d("NotificationService", "Notification removed: $notificationId")
+        } catch (e: Exception) {
+            Log.e("NotificationService", "${e.message}")
+        }
+    }
+
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         Log.d("NotificationService", "Notification removed: ${sbn.packageName}")
 
@@ -278,7 +310,7 @@ class NotificationService : NotificationListenerService() {
             else -> charSequence?.toString()
         }
     }
-    fun Notification.isMediaStyle(): Boolean {
+    private fun Notification.isMediaStyle(): Boolean {
         val mediaStyleClassName = "android.app.Notification\$MediaStyle"
         return mediaStyleClassName == this.extras.getString(Notification.EXTRA_TEMPLATE)
     }
