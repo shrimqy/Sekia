@@ -5,6 +5,7 @@ import komu.seki.common.models.FileMetadata
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.time.Duration
 import java.time.Year
 
 
@@ -26,7 +27,9 @@ enum class CommandType {
     SHUTDOWN,
     SLEEP,
     HIBERNATE,
-    MIRROR
+    MIRROR,
+    CLOSE_MIRROR,
+    CLEAR_NOTIFICATIONS
 }
 
 enum class TransferType {
@@ -150,9 +153,8 @@ data class DirectoryInfo(
 
 @Serializable
 @SerialName("10")
-data class ScreenMirrorData(
-    val data: String,
-    val timestamp: Long
+data class ScreenData(
+    val timestamp: Long,
 ) : SocketMessage()
 
 @Serializable
@@ -183,10 +185,15 @@ sealed class InteractiveControl {
 
     @Serializable
     @SerialName("KEYBOARD")
-    data class KeyboardEvent(
-        val action: Int?, // KeyEvent.ACTION_DOWN, ACTION_UP
-        val keyCode: Int,
-        val metaState: Int? // Shift, Ctrl, Alt, etc.
+    data class KeyboardAction(
+        val action: KeyboardActionType,
+    ) : InteractiveControl()
+
+
+    @Serializable
+    @SerialName("KEY")
+    data class KeyEvent(
+        val key: String,
     ) : InteractiveControl()
 
     @Serializable
@@ -202,11 +209,17 @@ sealed class InteractiveControl {
         val startY: Double,
         val endX: Double,
         val endY: Double,
+        val willContinue: Boolean,
         val frameWidth: Double,
-        val frameHeight: Double
+        val frameHeight: Double,
+        val duration: Double,
     ) : InteractiveControl()
 }
 
 enum class ScrollDirection {
     UP, DOWN
+}
+
+enum class KeyboardActionType {
+    Tab, Backspace, Enter, Escape, CtrlC, CtrlV, CtrlX, CtrlA
 }
