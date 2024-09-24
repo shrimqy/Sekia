@@ -133,8 +133,10 @@ class MessageHandler(
 
 
 
-    private fun handleFileTransfer(context: Context, message: FileTransfer) {
-        receivingFileHandler(context, message)
+    private fun handleFileTransfer(context: Context, preferencesSettings: PreferencesSettings, message: FileTransfer) {
+        CoroutineScope(Dispatchers.IO).launch {
+            receivingFileHandler(context, preferencesSettings, message)
+        }
     }
 
     private fun handleClipboardMessage(context: Context, clipboardMessage: ClipboardMessage) {

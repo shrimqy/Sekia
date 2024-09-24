@@ -15,10 +15,12 @@ import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
+import androidx.documentfile.provider.DocumentFile
 import komu.seki.common.models.FileMetadata
 import komu.seki.domain.models.DataTransferType
 import komu.seki.domain.models.FileTransfer
-import komu.seki.domain.models.TransferType
+import komu.seki.domain.models.PreferencesSettings
 import java.io.IOException
 import java.io.OutputStream
 
@@ -32,7 +34,7 @@ private var currentFileMetadata: FileMetadata? = null
 
 var uri: Uri? = null
 
-fun receivingFileHandler(context: Context, message: FileTransfer) {
+fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSettings, message: FileTransfer) {
     val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     val notificationId = 4159
 
@@ -46,30 +48,42 @@ fun receivingFileHandler(context: Context, message: FileTransfer) {
             currentFileMetadata?.let { metadata ->
                 val contentResolver = context.contentResolver
 
-                // Prepare the content values
-                val values = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, metadata.fileName)
-                    put(MediaStore.Downloads.MIME_TYPE, metadata.mimeType ?: "*/*")
-                    put(MediaStore.Downloads.RELATIVE_PATH, "Download/")
-                }
+                // Get the storage directory URI (tree URI)
+                val storageUri = preferencesSettings.storageLocation?.toUri()
 
-                // Insert the file entry and get the Uri
-                uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-
-                uri?.let {
+                if (storageUri != null) {
                     try {
-                        // Open an output stream to write the file
-                        currentFileOutputStream = contentResolver.openOutputStream(uri!!)
-                        Log.d("FileTransfer", "Receiving file: ${metadata.fileName}")
-                        bytesReceived = 0L // Reset bytes received counter
+                        // Convert the tree URI into a DocumentFile representing the directory
+                        val directory = DocumentFile.fromTreeUri(context, storageUri)
 
-                        // Initialize the notification with 0 progress
-                        val notification = createProgressNotification(context, metadata.fileName, 0, 100)
-                        notificationManager.notify(notificationId, notification)
+                        // Check if the directory is valid and writable
+                        if (directory != null && directory.canWrite()) {
+                            // Create a new file in the directory with the specified metadata
+                            val newFile = directory.createFile(metadata.mimeType ?: "*/*", metadata.fileName)
+
+                            // Open an output stream for the new file
+                            uri = newFile?.uri
+                            currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
+
+                            if (currentFileOutputStream != null) {
+                                Log.d("FileTransfer", "Receiving file: ${metadata.fileName}")
+                                bytesReceived = 0L // Reset bytes received counter
+
+                                // Initialize the notification with 0 progress
+                                val notification = createProgressNotification(context, metadata.fileName, 0, 100)
+                                notificationManager.notify(notificationId, notification)
+                            } else {
+                                Log.e("FileTransfer", "Failed to open output stream for URI: $uri")
+                            }
+                        } else {
+                            Log.e("FileTransfer", "Directory is null or not writable")
+                        }
                     } catch (e: IOException) {
                         Log.e("FileTransfer", "Error opening output stream: ${e.message}")
                     }
-                } ?: Log.e("FileTransfer", "Failed to create file entry")
+                } else {
+                    Log.e("FileTransfer", "Storage URI is null or invalid")
+                }
             }
         }
         DataTransferType.CHUNK -> {
@@ -97,10 +111,12 @@ fun receivingFileHandler(context: Context, message: FileTransfer) {
                             outputStream.flush()
                             // Cancel the progress notification
                             notificationManager.cancel(notificationId)
+
                             // Show completion notification
                             showCompletionNotification(context, currentFileMetadata?.fileName ?: "File", uri)
+
                             // Handle completion logic
-                            checkAndCompleteFileTransfer(context)
+                            checkAndCompleteFileTransfer(context, preferencesSettings)
                         } else {
                             return
                         }
@@ -169,13 +185,20 @@ fun createProgressNotification(context: Context, fileName: String, progress: Int
 }
 
 // Check if file transfer is complete and finalize
-private fun checkAndCompleteFileTransfer(context: Context) {
+private fun checkAndCompleteFileTransfer(context: Context, preferencesSettings: PreferencesSettings) {
     currentFileMetadata?.let { metadata ->
         if (pendingCompletion && bytesReceived == metadata.fileSize) {
             // Finalize the file transfer if all bytes have been received
             currentFileOutputStream?.let {
                 try {
                     it.close()
+                    currentFileOutputStream = null
+                    bytesReceived = 0L
+                    pendingCompletion = false
+                    if (preferencesSettings.imageClipboard) {
+                        copyImageToClipboard(context)
+                    } else return
+
                 } catch (e: IOException) {
                     Log.e("FileTransfer", "Error closing stream: ${e.message}")
                 } finally {
@@ -183,8 +206,8 @@ private fun checkAndCompleteFileTransfer(context: Context) {
                     bytesReceived = 0L
                     pendingCompletion = false
 
-                    if (metadata.mimeType?.startsWith("image/") == true) {
-                        copyImageToClipboard(context, metadata.fileName)
+                    if (metadata.mimeType.startsWith("image/")) {
+                        copyImageToClipboard(context)
                     }
                 }
             } ?: Log.e("FileTransfer", "Output stream already closed")
@@ -197,33 +220,16 @@ private fun checkAndCompleteFileTransfer(context: Context) {
 }
 
 // Helper function to copy the image to clipboard
-private fun copyImageToClipboard(context: Context, fileName: String) {
-    val contentResolver = context.contentResolver
+private fun copyImageToClipboard(context: Context) {
+    uri?.let {
+        val contentResolver = context.contentResolver
 
-    // Query the file from the Downloads directory
-    val fileUri = MediaStore.Downloads.EXTERNAL_CONTENT_URI
-    val query = contentResolver.query(
-        fileUri,
-        null,
-        "${MediaStore.Downloads.DISPLAY_NAME} = ?",
-        arrayOf(fileName),
-        null
-    )
+        // Get the clipboard manager
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newUri(contentResolver, "Image", uri)
 
-    query?.use { cursor ->
-        if (cursor.moveToFirst()) {
-            val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
-            val uri = ContentUris.withAppendedId(fileUri, id)
-
-            // Get the clipboard manager
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newUri(contentResolver, "Image", uri)
-
-            // Set the clipboard content
-            clipboard.setPrimaryClip(clip)
-            Log.d("FileTransfer", "Image copied to clipboard: $fileName")
-        } else {
-            Log.e("FileTransfer", "Failed to find image file in downloads for clipboard")
-        }
-    }
+        // Set the clipboard content
+        clipboard.setPrimaryClip(clip)
+        Log.d("FileTransfer", "Image copied to clipboard: ${uri!!.lastPathSegment}")
+    } ?: Log.e("FileTransfer", "Uri is null, cannot copy image to clipboard")
 }
