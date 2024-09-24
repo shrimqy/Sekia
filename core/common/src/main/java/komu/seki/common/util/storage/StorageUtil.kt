@@ -4,7 +4,9 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
+import androidx.documentfile.provider.DocumentFile
 import komu.seki.common.models.FileMetadata
+import java.net.URLDecoder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,4 +55,39 @@ fun extractMetadata(context: Context, uri: Uri): FileMetadata {
         uri = uri.toString(),
         mimeType = fileType
     )
+}
+
+/**
+ * Helper function to return a human-readable version of the URI.
+ * It supports both document tree URIs (content://...) and direct file paths (/storage/emulated/0/...).
+ */
+fun getReadablePathFromUri(context: Context, uriString: String): String {
+    return if (uriString.startsWith("content://")) {
+        // Parse the URI and convert it to a human-readable path
+        val uri = Uri.parse(uriString)
+        getPathFromTreeUri(uri)
+    } else {
+        // Return the file path as is (e.g., "/storage/emulated/0/Downloads")
+        uriString
+    }
+}
+
+/**
+ * Helper function to get the human-readable path from a Document Tree URI.
+ */
+private fun getPathFromTreeUri(uri: Uri): String {
+    // Decode the URI to make it human-readable
+    val decodedPath = URLDecoder.decode(uri.toString(), "UTF-8")
+
+    return when {
+        decodedPath.contains("primary:") -> {
+            // Convert "primary:" to "/storage/emulated/0/" for primary storage
+            decodedPath.replaceFirst("content://com.android.externalstorage.documents/tree/primary:", "/storage/emulated/0/")
+                .replaceFirst("/document/primary:", "")
+        }
+        else -> {
+            // Fallback if it's not the primary storage
+            decodedPath
+        }
+    }
 }

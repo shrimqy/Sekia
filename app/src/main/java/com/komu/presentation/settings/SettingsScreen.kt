@@ -1,6 +1,7 @@
 package com.komu.presentation.settings
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
@@ -33,12 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.komu.presentation.settings.components.LogoHeader
 import com.komu.presentation.settings.components.SwitchPreferenceWidget
 import com.komu.presentation.settings.components.TextPreferenceWidget
 import com.komu.sekia.navigation.SettingsRouteScreen
+import komu.seki.common.util.storage.getReadablePathFromUri
 import kotlinx.coroutines.launch
 
 @Composable
@@ -104,7 +107,7 @@ fun SettingsScreen(
         item {
             TextPreferenceWidget(
                 title = "Storage location",
-                subtitle = storageLocation,
+                subtitle = getReadablePathFromUri(context, storageLocation),
                 icon = Icons.Default.Storage,
                 onPreferenceClick = {
                     try {
