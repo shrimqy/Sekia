@@ -59,7 +59,7 @@ class HomeViewModel @Inject constructor(
             preferencesRepository.readLastConnected().collectLatest { lastConnectedValue ->
                 if (lastConnectedValue != null) {
                     appRepository.getDevice(lastConnectedValue).collectLatest { device ->
-                        Log.d("HomeViewModel", "Device found: $device")
+                        Log.d("HomeViewModel", "Device found: ${device.deviceName}")
                         _deviceDetails.value = device
                     }
                 }
@@ -74,21 +74,41 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val currentStatus = preferencesRepository.readSyncStatus().firstOrNull() ?: false
             if (!currentStatus) {
-                toggleSync(false)
+                toggleSync(true)
             }
         }
     }
 
-    fun toggleSync(syncStatus: Boolean) {
+    fun toggleSync(syncRequest: Boolean) {
         appScope.launch {
             _isRefreshing.value = true
             if (deviceDetails.value?.ipAddress != null) {
                 // Proceed based on current status
-                val intent = Intent(getApplication(), NetworkService::class.java).apply {
-                    action = if (syncStatus) Actions.STOP.name else Actions.START.name
-                    putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                if (syncRequest and !syncStatus.value){
+                    val intent = Intent(getApplication(), NetworkService::class.java).apply {
+                        action = Actions.START.name
+                        putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                    }
+                    getApplication<Application>().startService(intent)
+                } else if (syncRequest and syncStatus.value) {
+                    var intent = Intent(getApplication(), NetworkService::class.java).apply {
+                        action = Actions.STOP.name
+                        putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                    }
+                    getApplication<Application>().startService(intent)
+
+                    intent = Intent(getApplication(), NetworkService::class.java).apply {
+                        action = Actions.START.name
+                        putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                    }
+                    getApplication<Application>().startService(intent)
+                } else if (!syncRequest and syncStatus.value){
+                    val intent = Intent(getApplication(), NetworkService::class.java).apply {
+                        action = Actions.STOP.name
+                        putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                    }
+                    getApplication<Application>().startService(intent)
                 }
-                getApplication<Application>().startService(intent)
             }
             delay(1.seconds)
             _isRefreshing.value = false

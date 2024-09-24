@@ -152,11 +152,7 @@ class MessageHandler(
     ) {
         playbackRepository.updatePlaybackData(playbackData)
         CoroutineScope(Dispatchers.Main).launch {
-            mediaController(
-                context,
-                playbackData,
-                sendMessage
-            )
+            mediaController(context, playbackData, sendMessage)
         }
     }
 

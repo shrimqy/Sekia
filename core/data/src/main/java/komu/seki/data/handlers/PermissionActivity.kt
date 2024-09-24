@@ -1,10 +1,12 @@
-package komu.seki.data.services
+package komu.seki.data.handlers
 
 import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import komu.seki.data.services.ScreenMirrorService
+import komu.seki.data.services.ScreenMirrorService.Companion.ACTION_START_SCREEN_CAPTURE
 
 class PermissionRequestActivity : AppCompatActivity() {
 
@@ -24,6 +26,7 @@ class PermissionRequestActivity : AppCompatActivity() {
             val intent = Intent(this, ScreenMirrorService::class.java)
             intent.putExtra("resultCode", resultCode)
             intent.putExtra("data", data)
+            intent.action = ACTION_START_SCREEN_CAPTURE
             startService(intent)
         }
         finish() // Close the activity

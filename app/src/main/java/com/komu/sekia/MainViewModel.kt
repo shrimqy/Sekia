@@ -32,7 +32,7 @@ class MainViewModel @Inject constructor(
     var splashCondition by mutableStateOf(true)
         private set
 
-    var startDestination by mutableStateOf(Graph.MainScreenGraph)
+    private var startDestination by mutableStateOf(Graph.MainScreenGraph)
         private set
 
     private val _hostAddress = MutableStateFlow<String?>(null)

@@ -5,5 +5,6 @@
     android:accessibilityFeedbackType="feedbackGeneric"
     android:notificationTimeout="100"
     android:canPerformGestures="true"
+    android:canRequestFilterKeyEvents="true"
     android:canRetrieveWindowContent="true"
     android:settingsActivity="com.your.package.name.SettingsActivity" />

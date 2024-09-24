@@ -61,7 +61,7 @@ fun HomeScreen(
             ) {
                 DeviceCard(
                     device = deviceDetails,
-                    onSyncAction = { viewModel.toggleSync(syncStatus) },
+                    onSyncAction = { viewModel.toggleSync(!syncStatus) },
                     syncStatus = syncStatus,
                     navController = navController
                 )

@@ -1,6 +1,8 @@
 package komu.seki.data.repository
 
 import android.content.Context
+import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -8,6 +10,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.documentfile.provider.DocumentFile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import komu.seki.domain.models.PreferencesSettings
 import komu.seki.domain.repository.PreferencesRepository
@@ -79,12 +82,24 @@ class PreferencesDatastore @Inject constructor(
         return datastore.data.catch {
             emit(emptyPreferences())
         }.map { preferences->
+
+            // Default to the system's Downloads directory URI
+            val defaultDownloadUri = getDefaultDownloadsUri()
             val discovery = preferences[PreferencesKeys.AUTO_DISCOVERY] ?: true
             val imageClipboard = preferences[PreferencesKeys.IMAGE_CLIPBOARD] ?: true
-            val storageLocation = preferences[PreferencesKeys.STORAGE_LOCATION] ?: "/storage/emulated/0/Downloads"
+            val storageLocation = preferences[PreferencesKeys.STORAGE_LOCATION] ?: defaultDownloadUri.toString()
             PreferencesSettings(discovery, imageClipboard, storageLocation)
         }
     }
 
+    /**
+     * Helper function to get the default URI for the Downloads folder.
+     */
+    private fun getDefaultDownloadsUri(): Uri {
+        return DocumentsContract.buildDocumentUri(
+            "com.android.providers.downloads.documents",
+            "downloads"
+        )
+    }
 
 }

@@ -41,11 +41,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.common.util.Constants.ACTION_SEND_ACTIVE_NOTIFICATIONS
 import komu.seki.common.util.Constants.ACTION_STOP_NOTIFICATION_SERVICE
 import komu.seki.data.repository.AppRepository
+import komu.seki.data.services.NotificationService
 import komu.seki.data.services.NsdService
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.DeviceStatus
 import komu.seki.domain.models.SocketMessage
-import komu.seki.domain.models.StorageInfo
 import komu.seki.domain.repository.PreferencesRepository
 import komu.seki.domain.repository.WebSocketRepository
 import kotlinx.coroutines.CoroutineScope
