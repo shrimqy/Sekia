@@ -115,6 +115,12 @@ class MessageHandler(
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
             }
+            CommandType.CLOSE_MIRROR -> {
+                val stopScreenMirrorServiceIntent = Intent(context, ScreenMirrorService::class.java).apply {
+                    action = ACTION_STOP_SCREEN_CAPTURE
+                }
+                context.startService(stopScreenMirrorServiceIntent)
+            }
             CommandType.CLEAR_NOTIFICATIONS -> {
                 val intent = Intent(ACTION_CLEAR_NOTIFICATIONS).also {
                     it.setPackage(context.packageName)
