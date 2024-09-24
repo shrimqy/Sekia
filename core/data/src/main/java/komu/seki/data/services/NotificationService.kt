@@ -51,6 +51,7 @@ class NotificationService : NotificationListenerService() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 ACTION_SEND_ACTIVE_NOTIFICATIONS -> {
+                    Log.d("Notification", "Sending Active Notifications")
                     val service = context as? NotificationService
                     service?.sendActiveNotifications()
                 }

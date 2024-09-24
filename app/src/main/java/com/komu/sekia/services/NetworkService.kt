@@ -470,8 +470,7 @@ class NetworkService : Service() {
 
 
     private fun sendActiveNotifications() {
-        val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS)
-        intent.setPackage(packageName)
+        val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS).apply { setPackage(packageName) }
         sendBroadcast(intent)
     }
 
@@ -493,8 +492,6 @@ class NetworkService : Service() {
         private const val NOTIFICATION_ID = 1
         const val EXTRA_HOST_ADDRESS = "extra_host_address"
         const val NEW_DEVICE = "new_device"
-        const val ACTION_SEND_ACTIVE_NOTIFICATIONS = "com.komu.sekia.services.NotificationService.SEND_ACTIVE_NOTIFICATIONS"
-        const val ACTION_STOP_NOTIFICATION_SERVICE = "com.komu.sekia.services.NotificationService.STOP_NOTIFICATION_SERVICE"
     }
 }
 

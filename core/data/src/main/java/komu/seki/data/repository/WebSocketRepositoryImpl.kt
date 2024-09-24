@@ -29,6 +29,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -47,6 +48,7 @@ class WebSocketRepositoryImpl @Inject constructor(
 
     private val client = HttpClient(CIO) {
         install(WebSockets){
+            pingInterval = -1L
             maxFrameSize = Long.MAX_VALUE
         }
     }
@@ -71,11 +73,14 @@ class WebSocketRepositoryImpl @Inject constructor(
 
     override suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo?): Boolean {
         try {
-            lastHostAddress = hostAddress
-            val port = 5149
-            session = client.webSocketSession {
-                url("ws://$hostAddress:$port")
+            runBlocking {
+                lastHostAddress = hostAddress
+                val port = 5149
+                session = client.webSocketSession {
+                    url("ws://$hostAddress:$port")
+                }
             }
+
             Log.d("socket", "Client Connected to $hostAddress")
             if (deviceInfo != null) {
                 Log.d("message", "sending deviceInfo $deviceInfo")
@@ -122,6 +127,7 @@ class WebSocketRepositoryImpl @Inject constructor(
             }
         }
     }
+
     private suspend fun reconnect() {
         session?.close()
         delay(2000) // Wait before attempting reconnection

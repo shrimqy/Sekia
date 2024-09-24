@@ -96,7 +96,7 @@ class HomeViewModel @Inject constructor(
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
                     }
                     getApplication<Application>().startService(intent)
-
+                    delay(50)
                     intent = Intent(getApplication(), NetworkService::class.java).apply {
                         action = Actions.START.name
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
