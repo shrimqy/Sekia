@@ -47,7 +47,7 @@ fun AboutScreen(rootNavController: NavController, modifier: Modifier = Modifier)
             item {
                 TextPreferenceWidget(
                     title = "Version",
-                    subtitle = "0.2.1, Sep 15, 2024",
+                    subtitle = "0.3.0, Sep 25, 2024",
                     onPreferenceClick = { uriHandler.openUri("https://github.com/shrimqy/Sekia") },
                 )
             }
