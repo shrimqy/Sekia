@@ -59,8 +59,14 @@ class HomeViewModel @Inject constructor(
             preferencesRepository.readLastConnected().collectLatest { lastConnectedValue ->
                 if (lastConnectedValue != null) {
                     appRepository.getDevice(lastConnectedValue).collectLatest { device ->
-                        Log.d("HomeViewModel", "Device found: ${device.deviceName}")
-                        _deviceDetails.value = device
+                        if (device != null) {
+                            Log.d("HomeViewModel", "Device found: ${device.deviceName}")
+                            _deviceDetails.value = device
+                        } else {
+                            Log.e("HomeViewModel", "Device not found for value: $lastConnectedValue")
+                            // Handle null case for device
+                            _deviceDetails.value = null
+                        }
                     }
                 }
             }

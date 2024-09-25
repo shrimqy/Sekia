@@ -18,7 +18,7 @@ interface DeviceDao {
     fun getAllDevicesFlow(): Flow<List<Device>>
 
     @Query("SELECT * FROM Device WHERE ipAddress = :ipAddress")
-    fun getDevice(ipAddress: String): Flow<Device>
+    fun getDevice(ipAddress: String): Flow<Device?>
 
     @Query("SELECT ipAddress FROM Device WHERE deviceName = :deviceName")
     suspend fun getHostAddress(deviceName: String): String?
