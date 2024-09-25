@@ -11,6 +11,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
@@ -47,45 +48,60 @@ fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSetti
             currentFileMetadata = message.metadata
             currentFileMetadata?.let { metadata ->
                 val contentResolver = context.contentResolver
+                var storageUri: Uri? = null
 
-                // Get the storage directory URI (tree URI)
-                val storageUri = preferencesSettings.storageLocation?.toUri()
+                // Check if the storage location is set in preferences
+                if (preferencesSettings.storageLocation.isNotEmpty()) {
+                    storageUri = preferencesSettings.storageLocation.toUri()
 
-                if (storageUri != null) {
-                    try {
-                        // Convert the tree URI into a DocumentFile representing the directory
-                        val directory = DocumentFile.fromTreeUri(context, storageUri)
+                    // Convert the tree URI into a DocumentFile representing the directory
+                    val directory = DocumentFile.fromTreeUri(context, storageUri)
 
-                        // Check if the directory is valid and writable
-                        if (directory != null && directory.canWrite()) {
-                            // Create a new file in the directory with the specified metadata
-                            val newFile = directory.createFile(metadata.mimeType ?: "*/*", metadata.fileName)
+                    // Check if the directory is valid and writable
+                    if (directory != null && directory.canWrite()) {
+                        // Create a new file in the directory with the specified metadata
+                        val newFile = directory.createFile(metadata.mimeType ?: "*/*", metadata.fileName)
 
-                            // Open an output stream for the new file
-                            uri = newFile?.uri
-                            currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
+                        // Open an output stream for the new file
+                        uri = newFile?.uri
+                        currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
 
-                            if (currentFileOutputStream != null) {
-                                Log.d("FileTransfer", "Receiving file: ${metadata.fileName}")
-                                bytesReceived = 0L // Reset bytes received counter
-
-                                // Initialize the notification with 0 progress
-                                val notification = createProgressNotification(context, metadata.fileName, 0, 100)
-                                notificationManager.notify(notificationId, notification)
-                            } else {
-                                Log.e("FileTransfer", "Failed to open output stream for URI: $uri")
-                            }
-                        } else {
-                            Log.e("FileTransfer", "Directory is null or not writable")
+                    } else {
+                        // Use MediaStore to insert a file in the Downloads folder
+                        val values = ContentValues().apply {
+                            put(MediaStore.Downloads.DISPLAY_NAME, metadata.fileName) // File name
+                            put(
+                                MediaStore.Downloads.MIME_TYPE,
+                                metadata.mimeType ?: "*/*"
+                            ) // MIME type
+                            put(
+                                MediaStore.Downloads.RELATIVE_PATH,
+                                Environment.DIRECTORY_DOWNLOADS
+                            ) // Path
                         }
-                    } catch (e: IOException) {
-                        Log.e("FileTransfer", "Error opening output stream: ${e.message}")
+                        uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                        currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
                     }
-                } else {
-                    Log.e("FileTransfer", "Storage URI is null or invalid")
+                }
+
+                try {
+                    Log.d("FileTransfer", "used storageUri: $uri")
+                    if (currentFileOutputStream != null) {
+                        Log.d("FileTransfer", "Receiving file: ${metadata.fileName}")
+                        bytesReceived = 0L // Reset bytes received counter
+
+                        // Initialize the notification with 0 progress
+                        val notification = createProgressNotification(context, metadata.fileName, 0, 100)
+                        notificationManager.notify(notificationId, notification)
+                    } else {
+                        Log.e("FileTransfer", "Failed to open output stream for URI: $uri")
+                    }
+                } catch (e: Exception) {
+                    Log.e("FileTransfer", "Error during file creation or output stream opening: ${e.message}")
                 }
             }
         }
+
         DataTransferType.CHUNK -> {
             currentFileOutputStream?.let { outputStream ->
                 message.chunkData?.let { chunkBase64 ->
@@ -97,7 +113,7 @@ fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSetti
                         // Update progress percentage
                         progress = if (totalFileSize > 0) ((bytesReceived * 100) / totalFileSize).toInt() else 0
 
-                        // Log only the progress percentage
+                        // Log the progress percentage
                         Log.d("FileTransfer", "Progress: $progress%")
 
                         // Update the notification with progress
@@ -126,6 +142,7 @@ fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSetti
                 } ?: Log.e("FileTransfer", "Chunk data is null")
             } ?: Log.e("FileTransfer", "Output stream is null")
         }
+
         else -> {
             return
         }

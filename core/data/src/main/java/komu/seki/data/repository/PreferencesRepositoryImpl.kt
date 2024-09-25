@@ -83,23 +83,11 @@ class PreferencesDatastore @Inject constructor(
             emit(emptyPreferences())
         }.map { preferences->
 
-            // Default to the system's Downloads directory URI
-            val defaultDownloadUri = getDefaultDownloadsUri()
             val discovery = preferences[PreferencesKeys.AUTO_DISCOVERY] ?: true
             val imageClipboard = preferences[PreferencesKeys.IMAGE_CLIPBOARD] ?: true
-            val storageLocation = preferences[PreferencesKeys.STORAGE_LOCATION] ?: defaultDownloadUri.toString()
+            val storageLocation = preferences[PreferencesKeys.STORAGE_LOCATION] ?: ""
             PreferencesSettings(discovery, imageClipboard, storageLocation)
         }
-    }
-
-    /**
-     * Helper function to get the default URI for the Downloads folder.
-     */
-    private fun getDefaultDownloadsUri(): Uri {
-        return DocumentsContract.buildDocumentUri(
-            "com.android.providers.downloads.documents",
-            "downloads"
-        )
     }
 
 }

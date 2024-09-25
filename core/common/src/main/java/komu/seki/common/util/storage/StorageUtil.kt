@@ -68,7 +68,7 @@ fun getReadablePathFromUri(context: Context, uriString: String): String {
         getPathFromTreeUri(uri)
     } else {
         // Return the file path as is (e.g., "/storage/emulated/0/Downloads")
-        uriString
+        "/storage/emulated/0/Download"
     }
 }
 
