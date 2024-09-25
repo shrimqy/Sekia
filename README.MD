@@ -12,11 +12,14 @@
 - **Media Control**: Control media playback and volume of your PC from android.
 - **File Sharing**: Share files between your devices easily.
 - **Notification**: Allows toasting the notifications from your android in desktop.
+- **Remote Control**: Control your phone from pc.
 
 ## Limitations
 
 - **Clipboard Sharing on Android**:
    - Due to Android's restrictions, clipboard sharing is only possible via the share sheet.
+- **Remote Control**:
+   - Keyboard input works optimally on android 13+
 
 ## Installation
 
@@ -27,7 +30,7 @@
 ## How to Use
 
 1. **Setting Up**:
-   - Permissions: Allow the app to post notifications, location access, and restricted access from App Info (after trying to grant the notification access), .
+   - Permissions: Allow the app to post notifications, location access, restricted access from App Info (after trying to grant the notification access) and accessibility access to use your phone on pc.
    - Ensure both your Android device and Windows PC are connected to the same network.
    - Launch the app on your Windows PC.
    - Try to add a new device from the device card or device tab(Pull to refresh if it doesn't show any devices).
@@ -37,6 +40,8 @@
    - To share clipboard from android you will have to manually sent it through the share sheet that shows after you perform a copy action).
 3. **File Transfer**:
    - Use the share sheet from android/windows and select the app to share any files between the devices.
+4. **Remote Control**:
+   - Click the button next to the connection status button which will give a prompt to cast on your phone, choose the entire screen.
 
 ## Screenshots
 
@@ -46,7 +51,6 @@
 
 - Notification Actions.
 - Exploring Device Files.
-- Screen Casting
 
 ## Tech Stack
 
