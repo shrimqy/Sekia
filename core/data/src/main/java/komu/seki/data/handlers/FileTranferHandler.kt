@@ -44,48 +44,31 @@ fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSetti
 
     when (message.dataTransferType) {
         DataTransferType.METADATA -> {
-            // Start receiving file
             currentFileMetadata = message.metadata
             currentFileMetadata?.let { metadata ->
                 val contentResolver = context.contentResolver
                 var storageUri: Uri? = null
-
-                // Check if the storage location is set in preferences
                 if (preferencesSettings.storageLocation.isNotEmpty()) {
                     storageUri = preferencesSettings.storageLocation.toUri()
-
-                    // Convert the tree URI into a DocumentFile representing the directory
                     val directory = DocumentFile.fromTreeUri(context, storageUri)
+                    val newFile = directory?.createFile(metadata.mimeType ?: "*/*", metadata.fileName)
 
-                    // Check if the directory is valid and writable
-                    if (directory != null && directory.canWrite()) {
-                        // Create a new file in the directory with the specified metadata
-                        val newFile = directory.createFile(metadata.mimeType ?: "*/*", metadata.fileName)
-
-                        // Open an output stream for the new file
-                        uri = newFile?.uri
-                        currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
-
-                    } else {
-                        // Use MediaStore to insert a file in the Downloads folder
-                        val values = ContentValues().apply {
-                            put(MediaStore.Downloads.DISPLAY_NAME, metadata.fileName) // File name
-                            put(
-                                MediaStore.Downloads.MIME_TYPE,
-                                metadata.mimeType ?: "*/*"
-                            ) // MIME type
-                            put(
-                                MediaStore.Downloads.RELATIVE_PATH,
-                                Environment.DIRECTORY_DOWNLOADS
-                            ) // Path
-                        }
-                        uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                        currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
+                    uri = newFile?.uri
+                    currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
+                    Log.d("FileTransfer", "uri used: $uri")
+                } else {
+                    // Use MediaStore to insert a file in the Downloads folder
+                    val values = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, metadata.fileName) // File name
+                        put(MediaStore.Downloads.MIME_TYPE, metadata.mimeType ?: "*/*") // MIME type
+                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS) // Path
                     }
-                }
 
+                    uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
+                }
+                Log.d("FileTransfer", "uri: $uri")
                 try {
-                    Log.d("FileTransfer", "used storageUri: $uri")
                     if (currentFileOutputStream != null) {
                         Log.d("FileTransfer", "Receiving file: ${metadata.fileName}")
                         bytesReceived = 0L // Reset bytes received counter
@@ -94,7 +77,7 @@ fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSetti
                         val notification = createProgressNotification(context, metadata.fileName, 0, 100)
                         notificationManager.notify(notificationId, notification)
                     } else {
-                        Log.e("FileTransfer", "Failed to open output stream for URI: $uri")
+                        Log.e("FileTransfer", "Failed to open output stream for URI: $storageUri")
                     }
                 } catch (e: Exception) {
                     Log.e("FileTransfer", "Error during file creation or output stream opening: ${e.message}")
@@ -249,4 +232,29 @@ private fun copyImageToClipboard(context: Context) {
         clipboard.setPrimaryClip(clip)
         Log.d("FileTransfer", "Image copied to clipboard: ${uri!!.lastPathSegment}")
     } ?: Log.e("FileTransfer", "Uri is null, cannot copy image to clipboard")
+}
+
+fun createUniqueFile(directory: DocumentFile, fileName: String, mimeType: String?): DocumentFile? {
+    var baseName = fileName
+    var extension = ""
+
+    // Separate file name and extension
+    val dotIndex = fileName.lastIndexOf('.')
+    if (dotIndex != -1) {
+        baseName = fileName.substring(0, dotIndex)
+        extension = fileName.substring(dotIndex)
+    }
+
+    var newFile = directory.findFile(fileName)
+    var index = 1
+
+    // Check for duplicate files and create a unique name
+    while (newFile != null) {
+        val newName = "$baseName ($index)$extension"
+        newFile = directory.findFile(newName)
+        index++
+    }
+
+    // Create the file with the unique name
+    return directory.createFile(mimeType ?: "*/*", "$baseName ($index)$extension")
 }
