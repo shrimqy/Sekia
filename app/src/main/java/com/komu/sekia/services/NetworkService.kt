@@ -216,6 +216,7 @@ class NetworkService : Service() {
                         sendMessage(getStorageInfo())
                         sendMessage(getDeviceStatus())
                         sendActiveNotifications()
+                        connectivityManager.unregisterNetworkCallback(networkCallback)
                         break
                     } else {
                         Log.d("WebSocketService", "Connection failed on attempt $attempt")
@@ -311,9 +312,9 @@ class NetworkService : Service() {
                             startNSDDiscovery()
                         }
                     }
+
                 }
             }
-
             override fun onUnavailable() {
                 Log.d("NetworkService", "Network unavailable")
                 connectivityManager.unregisterNetworkCallback(this)
@@ -370,7 +371,7 @@ class NetworkService : Service() {
                                     .build()
                                 Log.d("service", "Getting WorkManager Instance")
                                 WorkManager.getInstance(applicationContext).enqueue(workRequest)
-
+                                connectivityManager.unregisterNetworkCallback(networkCallback)
                             }
                         } else {
                             Log.d("service", "Duplicate service skipped: ${service.serviceName}")
@@ -476,6 +477,8 @@ class NetworkService : Service() {
 
     override fun onDestroy() {
         Log.d("WebSocketService", "onDestroy called")
+        isForegroundStarted = false
+
         scope.launch {
             preferencesRepository.saveSynStatus(false)
         }
@@ -483,8 +486,8 @@ class NetworkService : Service() {
         unregisterReceiver(batteryReceiver)
         unregisterReceiver(wifiReceiver)
         unregisterReceiver(bluetoothReceiver)
+        connectivityManager.unregisterNetworkCallback(networkCallback)
         scope.cancel()
-        isForegroundStarted = false
         super.onDestroy()
     }
 
