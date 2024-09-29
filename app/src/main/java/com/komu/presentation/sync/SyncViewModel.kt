@@ -20,7 +20,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
 
-
 @HiltViewModel
 class SyncViewModel @Inject constructor(
     application: Application,
@@ -38,10 +37,10 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             nsdService.startDiscovery()
             delay(1.seconds)
-            nsdService.stopDiscovery()
             if (services.value.isEmpty()) {
                 Toast.makeText(application.applicationContext, "Make sure you're connected to the same network as your PC", Toast.LENGTH_LONG).show()
             }
+            nsdService.stopDiscovery()
         }
     }
 
@@ -67,14 +66,14 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    fun findServices(context: Context) {
+    fun findServices() {
         viewModelScope.launch {
             _isRefreshing.value = true
             nsdService.startDiscovery()
             // Fake slower refresh so it doesn't seem like it's not doing anything
-            delay(1.seconds)
-            stopDiscovery()
+            delay(1.5.seconds)
             _isRefreshing.value = false
+            stopDiscovery()
         }
     }
 

@@ -124,7 +124,9 @@ class NetworkService : Service() {
                     WifiManager.WIFI_STATE_ENABLED -> {
                         Log.d("NetworkService", "Wi-Fi enabled")
                         // Register the network callback when Wi-Fi is enabled
-                        registerNetworkCallback()
+                        if(!isConnected) {
+                            registerNetworkCallback()
+                        }
                     }
                     WifiManager.WIFI_STATE_DISABLED -> {
                         Log.d("NetworkService", "Wi-Fi disabled")
@@ -230,7 +232,7 @@ class NetworkService : Service() {
             }
 
             // If not connected after retries, register for NSD discovery
-            if (!connected) {
+            if (!connected && hostAddress.isNotEmpty()) {
                 Log.d("WebSocketService", "Failed to connect after $maxRetries attempts. Falling back to NSD discovery.")
                 CoroutineScope(Dispatchers.IO).launch {
                     preferencesRepository.preferenceSettings().collect { preferences ->

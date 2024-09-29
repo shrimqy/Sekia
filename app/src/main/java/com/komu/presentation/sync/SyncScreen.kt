@@ -63,7 +63,7 @@ fun SyncScreen(
     PullRefresh(
         refreshing = isRefreshing,
         enabled = true,
-        onRefresh = { viewModel.findServices(context) }
+        onRefresh = { viewModel.findServices() }
     ) {
         Scaffold(
             topBar ={

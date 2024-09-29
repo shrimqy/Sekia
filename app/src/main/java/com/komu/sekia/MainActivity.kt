@@ -49,8 +49,6 @@ class MainActivity : BaseActivity() {
             deniedPermissions.forEach { permission ->
                 showPermissionExplanationDialog(permission)
             }
-        } else {
-            viewModel.startWebSocketService(this)
         }
     }
 
@@ -62,7 +60,9 @@ class MainActivity : BaseActivity() {
         checkStoragePermission()
         viewModel.startWebSocketService(this)
         installSplashScreen().apply {
-            setKeepOnScreenCondition { viewModel.splashCondition }
+            setKeepOnScreenCondition {
+                viewModel.splashCondition
+            }
         }
         enableEdgeToEdge()
         setContent {

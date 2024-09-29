@@ -87,16 +87,17 @@ class HomeViewModel @Inject constructor(
 
     fun toggleSync(syncRequest: Boolean) {
         appScope.launch {
+            val currentStatus = preferencesRepository.readSyncStatus().firstOrNull() ?: false
             _isRefreshing.value = true
             if (deviceDetails.value?.ipAddress != null) {
                 // Proceed based on current status
-                if (syncRequest and !syncStatus.value){
+                if (syncRequest and !currentStatus){
                     val intent = Intent(getApplication(), NetworkService::class.java).apply {
                         action = Actions.START.name
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
                     }
                     getApplication<Application>().startService(intent)
-                } else if (syncRequest and syncStatus.value) {
+                } else if (syncRequest and currentStatus) {
                     var intent = Intent(getApplication(), NetworkService::class.java).apply {
                         action = Actions.STOP.name
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
@@ -108,7 +109,7 @@ class HomeViewModel @Inject constructor(
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
                     }
                     getApplication<Application>().startService(intent)
-                } else if (!syncRequest and syncStatus.value){
+                } else if (!syncRequest and currentStatus){
                     val intent = Intent(getApplication(), NetworkService::class.java).apply {
                         action = Actions.STOP.name
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)

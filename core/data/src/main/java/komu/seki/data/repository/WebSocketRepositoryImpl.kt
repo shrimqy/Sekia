@@ -12,7 +12,7 @@ import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readText
 import komu.seki.data.handlers.MessageHandler
-import komu.seki.data.services.MediaSessionManager
+import komu.seki.data.handlers.MediaSessionManager
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.DeviceInfo
 import komu.seki.domain.models.NotificationMessage
@@ -73,14 +73,11 @@ class WebSocketRepositoryImpl @Inject constructor(
 
     override suspend fun connect(hostAddress: String, deviceInfo: DeviceInfo?): Boolean {
         try {
-            runBlocking {
-                lastHostAddress = hostAddress
-                val port = 5149
-                session = client.webSocketSession {
-                    url("ws://$hostAddress:$port")
-                }
+            lastHostAddress = hostAddress
+            val port = 5149
+            session = client.webSocketSession {
+                url("ws://$hostAddress:$port")
             }
-
             Log.d("socket", "Client Connected to $hostAddress")
             if (deviceInfo != null) {
                 Log.d("message", "sending deviceInfo $deviceInfo")
