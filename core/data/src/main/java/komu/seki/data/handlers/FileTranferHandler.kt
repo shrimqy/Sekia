@@ -11,6 +11,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Base64
@@ -22,6 +23,7 @@ import komu.seki.common.models.FileMetadata
 import komu.seki.domain.models.DataTransferType
 import komu.seki.domain.models.FileTransfer
 import komu.seki.domain.models.PreferencesSettings
+import java.io.File
 import java.io.IOException
 import java.io.OutputStream
 
@@ -64,7 +66,22 @@ fun receivingFileHandler(context: Context, preferencesSettings: PreferencesSetti
                         put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS) // Path
                     }
 
-                    uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        // Android 10 (Q) and above
+                        uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    } else {
+                        // For Android 9 (Pie) and below
+                        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        val file = File(downloadsDir, metadata.fileName)
+
+                        // Create the file on the file system
+                        if (!file.exists()) {
+                            file.createNewFile()
+                        }
+
+                        // Uri for the file
+                        uri = Uri.fromFile(file)
+                    }
                     currentFileOutputStream = uri?.let { contentResolver.openOutputStream(it) }
                 }
                 Log.d("FileTransfer", "uri: $uri")

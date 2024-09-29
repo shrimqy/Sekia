@@ -1,15 +1,15 @@
 [versions]
-minSdk = "29"
+minSdk = "26"
 compileSdk = "34"
 
-agp = "8.5.2"
+agp = "8.6.1"
 kotlin = "2.0.0"
 ksp = "2.0.0-1.0.22"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.5"
+lifecycleRuntimeKtx = "2.8.6"
 navigation = "2.8.0"
 datastore = "1.1.1"
 room = "2.6.1"
@@ -21,11 +21,11 @@ hilt-androidx = "1.2.0"
 
 ktorVersion = "2.3.12"
 
-composeBom = "2024.09.01"
+composeBom = "2024.09.02"
 compose-coil = "2.6.0"
 compose-activity = "1.9.2"
 
-compose-ui = "1.7.1"
+compose-ui = "1.7.2"
 material3 = "1.3.0"
 
 appcompat = "1.7.0"
