@@ -65,6 +65,5 @@ object AppModule {
     @Singleton
     fun providesNsdHelper(
         application: Application
-    ): NsdService =
-        NsdService(context = application)
+    ): NsdService = NsdService(context = application)
 }

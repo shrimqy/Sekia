@@ -82,7 +82,6 @@ fun MainScreen(
     val viewModel: HomeViewModel = hiltViewModel()
     val deviceDetails by viewModel.deviceDetails.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val context = LocalContext.current
 
     PullRefresh(
         refreshing = isRefreshing,

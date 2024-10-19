@@ -76,7 +76,6 @@ class NotificationService : NotificationListenerService() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("NotificationService", "Service created")
         val filter = IntentFilter().apply {
             addAction(ACTION_SEND_ACTIVE_NOTIFICATIONS)
             addAction(ACTION_REMOVE_NOTIFICATION)
@@ -124,7 +123,6 @@ class NotificationService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        Log.d("NotificationService", "Notification posted: ${sbn.packageName}")
         sendNotification(sbn, currentRanking, NotificationType.NEW)
     }
 
@@ -214,7 +212,7 @@ class NotificationService : NotificationListenerService() {
             val formattedTimestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", getDefault()).format(Date(timestamp))
 
             Log.d("message", "$appName $title $text messages: $messages $formattedTimestamp")
-            Log.d("NotificationService", notification.toString())
+
 
             // Retrieve the ranking of the notification
             val ranking = Ranking()
@@ -224,7 +222,6 @@ class NotificationService : NotificationListenerService() {
                 NotificationManager.IMPORTANCE_DEFAULT
             }
 
-            // Retrieve the actions from the notification
             val actions = notification.actions?.map { action ->
                 try {
                     // Extract action label and intent if they exist

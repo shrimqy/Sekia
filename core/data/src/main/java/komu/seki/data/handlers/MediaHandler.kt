@@ -1,4 +1,4 @@
-package komu.seki.data.services
+package komu.seki.data.handlers
 
 import android.app.NotificationChannel
 import android.app.NotificationManager

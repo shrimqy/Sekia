@@ -1,5 +1,6 @@
 package com.komu.sekia.ui.deeplink
 
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -86,9 +87,28 @@ class ShareToPc : BaseActivity() {
                     }
                 }
         } else {
-            Log.e("ShareToPc", "Received null text")
-            finishAffinity()
+            val clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clipData = clipboardManager.primaryClip
+            val clipboardText = clipData?.getItemAt(0)?.text?.toString()
+            if (clipboardText != null) {
+                Log.d("ShareToPc", "Handling clipboard share: $clipboardText")
+                scope.launch {
+                    try {
+                        networkService?.sendMessage(ClipboardMessage(clipboardText))
+                        Log.d("ShareToPc", "Clipboard message sent successfully")
+                        runOnUiThread {
+                            finishAffinity()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ShareToPc", "Failed to send clipboard message", e)
+                        runOnUiThread {
+                            finishAffinity()
+                        }
+                    }
+                }
+            }
         }
+        finishAffinity()
     }
 
     private fun handleFileTransfer(intent: Intent) {
@@ -97,7 +117,7 @@ class ShareToPc : BaseActivity() {
 
         if (uri != null) {
             scope.launch {
-                val bufferSize = 512 * 1024 // 512KB
+                val bufferSize = 2048 * 1024 // 512KB
                 val inputStream = contentResolver.openInputStream(uri)
                 try {
                     val metadata = extractMetadata(applicationContext, uri)
@@ -109,6 +129,7 @@ class ShareToPc : BaseActivity() {
                             val chunk = buffer.copyOf(bytesRead)
                             val encodedChunk = Base64.encodeToString(chunk, Base64.DEFAULT)
                             networkService?.sendMessage(FileTransfer(TransferType.WEBSOCKET, DataTransferType.CHUNK, chunkData = encodedChunk))
+                            delay(100)
                         }
                     }
                     inputStream?.close()
@@ -137,5 +158,4 @@ class ShareToPc : BaseActivity() {
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
     }
-
 }

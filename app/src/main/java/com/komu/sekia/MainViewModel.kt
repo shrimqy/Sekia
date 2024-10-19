@@ -33,7 +33,6 @@ class MainViewModel @Inject constructor(
         private set
 
     private var startDestination by mutableStateOf(Graph.MainScreenGraph)
-        private set
 
     private val _hostAddress = MutableStateFlow<String?>(null)
     private val hostAddress: StateFlow<String?> = _hostAddress.asStateFlow()

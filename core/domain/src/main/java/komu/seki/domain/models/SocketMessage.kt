@@ -1,12 +1,11 @@
 package komu.seki.domain.models
 
+import android.annotation.SuppressLint
 import android.os.Parcelable
 import komu.seki.common.models.FileMetadata
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.time.Duration
-import java.time.Year
 
 
 enum class NotificationType {
@@ -91,6 +90,7 @@ data class Message(
 @Serializable
 @SerialName("3")
 data class DeviceInfo(
+    val deviceId: String,
     val deviceName: String,
     val userAvatar: String? = null,
 ) : SocketMessage()
@@ -111,7 +111,7 @@ data class PlaybackData(
     val appName: String? = null,
     val trackTitle: String? = null,
     val artist: String? = null,
-    var volume: Float,
+    var volume: Float? = null,
     var isPlaying: Boolean? = null,
     var mediaAction: MediaAction?,
     val thumbnail: String? = null,

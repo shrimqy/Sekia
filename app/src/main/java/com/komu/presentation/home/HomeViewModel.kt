@@ -58,7 +58,7 @@ class HomeViewModel @Inject constructor(
         appScope.launch {
             preferencesRepository.readLastConnected().collectLatest { lastConnectedValue ->
                 if (lastConnectedValue != null) {
-                    appRepository.getDevice(lastConnectedValue).collectLatest { device ->
+                    appRepository.getDeviceFlow(lastConnectedValue).collectLatest { device ->
                         if (device != null) {
                             Log.d("HomeViewModel", "Device found: ${device.deviceName}")
                             _deviceDetails.value = device
@@ -95,6 +95,7 @@ class HomeViewModel @Inject constructor(
                     val intent = Intent(getApplication(), NetworkService::class.java).apply {
                         action = Actions.START.name
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                        putExtra(NetworkService.DEVICE_NAME, deviceDetails.value?.deviceName)
                     }
                     getApplication<Application>().startService(intent)
                 } else if (syncRequest and currentStatus) {
@@ -103,10 +104,11 @@ class HomeViewModel @Inject constructor(
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
                     }
                     getApplication<Application>().startService(intent)
-                    delay(50)
+                    delay(100)
                     intent = Intent(getApplication(), NetworkService::class.java).apply {
                         action = Actions.START.name
                         putExtra(NetworkService.EXTRA_HOST_ADDRESS, deviceDetails.value?.ipAddress)
+                        putExtra(NetworkService.DEVICE_NAME, deviceDetails.value?.deviceName)
                     }
                     getApplication<Application>().startService(intent)
                 } else if (!syncRequest and currentStatus){
@@ -125,19 +127,25 @@ class HomeViewModel @Inject constructor(
     // Handle play/pause, next, previous actions
     fun onPlayPause() {
         val action: MediaAction = if (playbackData.value?.isPlaying == true) MediaAction.PAUSE else MediaAction.RESUME
-        sendPlaybackData(playbackData.value!!, action)
+        viewModelScope.launch {
+            sendMessage(PlaybackData(appName = playbackData.value!!.appName, mediaAction = action))
+        }
     }
 
     fun onNext() {
-        sendPlaybackData(playbackData.value!!, MediaAction.NEXT_QUEUE)
+        viewModelScope.launch {
+            sendMessage(PlaybackData(appName = playbackData.value!!.appName, mediaAction = MediaAction.NEXT_QUEUE))
+        }
     }
 
     fun onPrevious() {
-        sendPlaybackData(playbackData.value!!, MediaAction.PREV_QUEUE)
+        viewModelScope.launch {
+            sendMessage(PlaybackData(appName = playbackData.value!!.appName, mediaAction = MediaAction.PREV_QUEUE))
+        }
     }
 
     fun onVolumeChange(volume: Int) {
-        CoroutineScope(Dispatchers.IO).launch {
+        viewModelScope.launch {
             sendMessage(PlaybackData(volume = volume.toFloat(), appName = playbackData.value?.appName, mediaAction = MediaAction.VOLUME))
         }
     }

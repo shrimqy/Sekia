@@ -13,13 +13,13 @@ class StartWebSocketWorker(
 
     override fun doWork(): Result {
         val hostAddress = inputData.getString(NetworkService.EXTRA_HOST_ADDRESS)
-        val newDevice = inputData.getBoolean(NetworkService.NEW_DEVICE, false)
+        val deviceName = inputData.getString(NetworkService.DEVICE_NAME)
 
         if (hostAddress != null) {
             val intent = Intent(applicationContext, NetworkService::class.java).apply {
                 action = Actions.START.name
                 putExtra(NetworkService.EXTRA_HOST_ADDRESS, hostAddress)
-                putExtra(NetworkService.NEW_DEVICE, newDevice)
+                putExtra(NetworkService.DEVICE_NAME, deviceName)
             }
             Log.d("worker", "Worker started Service")
             applicationContext.startForegroundService(intent)

@@ -8,7 +8,8 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Entity
 data class Device (
-    @PrimaryKey val ipAddress: String,
+    @PrimaryKey val deviceId: String,
+    val ipAddress: String,
     val deviceName: String,
     val avatar: String?,
 ) : Parcelable

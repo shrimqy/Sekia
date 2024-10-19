@@ -20,7 +20,6 @@ import komu.seki.data.repository.AppRepository
 import komu.seki.data.services.NotificationService
 import komu.seki.data.services.ScreenMirrorService
 import komu.seki.data.services.ScreenMirrorService.Companion.ACTION_STOP_SCREEN_CAPTURE
-import komu.seki.data.services.mediaController
 import komu.seki.domain.models.ClipboardMessage
 import komu.seki.domain.models.Command
 import komu.seki.domain.models.CommandType
@@ -36,10 +35,8 @@ import komu.seki.domain.models.PreferencesSettings
 import komu.seki.domain.models.Response
 import komu.seki.domain.models.SocketMessage
 import komu.seki.domain.repository.PlaybackRepository
-import komu.seki.domain.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MessageHandler(
@@ -180,7 +177,7 @@ class MessageHandler(
     private fun handleDeviceInfo(deviceInfo: DeviceInfo) {
         CoroutineScope(Dispatchers.Main).launch {
             Log.d("deviceInfo", deviceInfo.deviceName)
-            appRepository.addDevice(Device(deviceName = deviceInfo.deviceName, avatar = deviceInfo.userAvatar, ipAddress = lastConnected))
+            appRepository.addDevice(Device(deviceId = deviceInfo.deviceId, deviceName = deviceInfo.deviceName, avatar = deviceInfo.userAvatar, ipAddress = lastConnected))
         }
     }
 }

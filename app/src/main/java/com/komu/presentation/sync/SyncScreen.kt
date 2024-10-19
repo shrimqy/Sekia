@@ -10,6 +10,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -107,10 +109,16 @@ fun SyncScreen(
 
 
     if (showDialog.value && selectedService.value != null) {
+        val pairingCode = String(selectedService.value!!.attributes["pairingCode"]!!, Charsets.UTF_8)
         AlertDialog(
             onDismissRequest = { showDialog.value = false },
             title = { Text("Connect") },
-            text = { Text("Do you want to connect to ${selectedService.value?.serviceName}?") },
+            text = {
+                Column {
+                    Text("Do you want to connect to ${selectedService.value?.serviceName}?")
+                    Text("Paring Code: $pairingCode")
+                }
+            },
             confirmButton = {
                 Button(
                     onClick = {

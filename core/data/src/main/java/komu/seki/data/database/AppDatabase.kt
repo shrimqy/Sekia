@@ -27,7 +27,7 @@ interface AppDatabase {
 
 @Database(
     entities = [ Device::class, Network::class ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 

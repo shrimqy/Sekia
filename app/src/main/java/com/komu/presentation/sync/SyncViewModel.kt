@@ -32,6 +32,9 @@ class SyncViewModel @Inject constructor(
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> get() = _isConnected
 
+    // Capture the stateflow from the service as the data updates
+    val services: StateFlow<List<NsdServiceInfo>> = nsdService.services
+
     init {
         // Starting Nsd Discovery for mDNS services at start
         viewModelScope.launch {
@@ -40,12 +43,10 @@ class SyncViewModel @Inject constructor(
             if (services.value.isEmpty()) {
                 Toast.makeText(application.applicationContext, "Make sure you're connected to the same network as your PC", Toast.LENGTH_LONG).show()
             }
-            nsdService.stopDiscovery()
         }
     }
 
-    // Capture the stateflow from the service as the data updates
-    val services: StateFlow<List<NsdServiceInfo>> = nsdService.services
+
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing
@@ -54,10 +55,12 @@ class SyncViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val hostAddress = String(serviceInfo.attributes["ipAddress"]!!, Charsets.UTF_8)
+                val deviceName = serviceInfo.serviceName
                 val intent = Intent(context, NetworkService::class.java).apply {
                     action = Actions.START.name
-                    putExtra(NetworkService.NEW_DEVICE, true)
+                    putExtra(NetworkService.DEVICE_NAME, deviceName)
                     putExtra(NetworkService.EXTRA_HOST_ADDRESS, hostAddress)
+
                 }
                 context.startService(intent)
             } catch (e: Exception) {
@@ -73,7 +76,6 @@ class SyncViewModel @Inject constructor(
             // Fake slower refresh so it doesn't seem like it's not doing anything
             delay(1.5.seconds)
             _isRefreshing.value = false
-            stopDiscovery()
         }
     }
 

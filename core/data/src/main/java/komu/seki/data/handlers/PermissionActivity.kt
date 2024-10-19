@@ -4,9 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import komu.seki.data.services.ScreenMirrorService
 import komu.seki.data.services.ScreenMirrorService.Companion.ACTION_START_SCREEN_CAPTURE
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class PermissionRequestActivity : AppCompatActivity() {
 
@@ -15,19 +20,22 @@ class PermissionRequestActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), REQUEST_CODE)
+
+        // Start screen capture intent
+        val captureIntent = mediaProjectionManager.createScreenCaptureIntent()
+        screenCaptureLauncher.launch(captureIntent)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+    // Register the callback for screen capture result
+    private val screenCaptureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
             // Pass the result to the service
-            val intent = Intent(this, ScreenMirrorService::class.java)
-            intent.putExtra("resultCode", resultCode)
-            intent.putExtra("data", data)
-            intent.action = ACTION_START_SCREEN_CAPTURE
-            startService(intent)
+            val intent = Intent(this, ScreenMirrorService::class.java).apply {
+                putExtra("resultCode", result.resultCode)
+                putExtra("data", result.data)
+                action = ACTION_START_SCREEN_CAPTURE
+            }
+            startForegroundService(intent)
         }
         finish() // Close the activity
     }

@@ -1,5 +1,6 @@
 package com.komu.sekia.services
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,6 +9,7 @@ import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -23,6 +25,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings.Global
+import android.provider.Settings.Secure
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,10 +39,12 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.komu.sekia.MainActivity
 import com.komu.sekia.R
+import com.komu.sekia.ui.deeplink.ShareToPc
 import com.komu.sekia.utils.getStorageInfo
 import dagger.hilt.android.AndroidEntryPoint
 import komu.seki.common.util.Constants.ACTION_SEND_ACTIVE_NOTIFICATIONS
 import komu.seki.common.util.Constants.ACTION_STOP_NOTIFICATION_SERVICE
+import komu.seki.data.database.Device
 import komu.seki.data.repository.AppRepository
 import komu.seki.data.services.NotificationService
 import komu.seki.data.services.NsdService
@@ -56,6 +61,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -86,6 +94,8 @@ class NetworkService : Service() {
 
     private lateinit var connectivityManager: ConnectivityManager
 
+    private var connectingDevice: Device? = null
+
     inner class LocalBinder : Binder() {
         fun getService(): NetworkService = this@NetworkService
     }
@@ -95,7 +105,7 @@ class NetworkService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         registerReceivers()
         scope.launch {
             preferencesRepository.saveSynStatus(isConnected)
@@ -175,26 +185,31 @@ class NetworkService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        updateNotification(false)
         val hostAddress = intent?.getStringExtra(EXTRA_HOST_ADDRESS)
-        val newDevice = intent?.getBooleanExtra(NEW_DEVICE, false) ?: false
-        Log.d("WebSocketService", "Received hostAddress: $hostAddress new Device: $newDevice")
+        val deviceName = intent?.getStringExtra(DEVICE_NAME)
+        updateNotification(false, deviceName)
         Log.d("WebSocketService", "Received action: ${intent?.action}")
         when (intent?.action) {
-            Actions.START.name -> hostAddress?.let { start(it, newDevice) }
+            Actions.START.name ->  {
+                if (hostAddress.isNullOrEmpty()) {
+                    Log.e("WebSocketService", "Host address is null or empty")
+                    return START_NOT_STICKY
+                }
+                start(hostAddress, deviceName)
+            }
             Actions.STOP.name -> stop()
             else -> Log.d("WebSocketService", "Unknown action received")
         }
         return START_NOT_STICKY
     }
 
-    private fun updateNotification(isConnected: Boolean) {
+    private fun updateNotification(isConnected: Boolean, deviceName: String? = null) {
         // Rebuild and update the notification with the new sync status
-        val notification = createNotification(isConnected)
+        val notification = createNotification(isConnected, deviceName)
         startForeground(NOTIFICATION_ID, notification)
     }
 
-    private fun start(hostAddress: String, newDevice: Boolean) {
+    private fun start(hostAddress: String, deviceName: String?) {
         scope.launch {
             val maxRetries = 4
             var attempt = 0
@@ -208,10 +223,10 @@ class NetworkService : Service() {
                     // Try to connect, passing deviceInfo if it's a new device
                     val deviceInfo = getDeviceInfo()
                     isConnected = connect(hostAddress, deviceInfo)
-
                     if (isConnected) {
-                        updateNotification(true)
+                        Log.d("WebSocketService", "Received hostAddress: $hostAddress Device: ${connectingDevice?.deviceName}")
                         Log.d("WebSocketService", "Connected on attempt $attempt")
+                        updateNotification(true, deviceName)
                         connected = true
                         startListening()
                         preferencesRepository.saveSynStatus(true)
@@ -367,7 +382,7 @@ class NetworkService : Service() {
                                 val workRequest = OneTimeWorkRequestBuilder<StartWebSocketWorker>()
                                     .setInputData(workDataOf(
                                         EXTRA_HOST_ADDRESS to hostAddress,
-                                        NEW_DEVICE to false
+                                        DEVICE_NAME to service.serviceName
                                     ))
 //                                    .setConstraints(constraints)
                                     .build()
@@ -385,13 +400,16 @@ class NetworkService : Service() {
     }
 
 
+    @SuppressLint("HardwareIds")
     private fun getDeviceInfo(): DeviceInfo {
         val deviceName = Global.getString(context.contentResolver, "device_name")
+        val androidId = Secure.getString(context.contentResolver, Secure.ANDROID_ID)
         return DeviceInfo(
-            deviceName = deviceName,
-            userAvatar = null,
+            deviceId = androidId,
+            deviceName = deviceName
         )
     }
+
 
     private fun getDeviceStatus(): DeviceStatus {
         val batteryStatus: Int? =
@@ -430,20 +448,23 @@ class NetworkService : Service() {
     }
 
     suspend fun sendMessage(message: SocketMessage) {
-        webSocketRepository.sendMessage(message)
+        if (isConnected) {
+            webSocketRepository.sendMessage(message)
+        }
     }
 
     // Notification Builder
-    private fun createNotification(isConnected: Boolean): Notification {
+    private fun createNotification(isConnected: Boolean, deviceName: String? = null): Notification {
         val channelId = "WebSocket_Foreground_Service"
         val channel = NotificationChannel(
             channelId,
             "WebSocket Foreground Service",
             NotificationManager.IMPORTANCE_LOW
         )
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
 
+        // Disconnect Intent
         val disconnectIntent = Intent(this, NetworkService::class.java).apply {
             action = Actions.STOP.name
             putExtra(EXTRA_NOTIFICATION_ID, 0)
@@ -451,26 +472,35 @@ class NetworkService : Service() {
         val disconnectPendingIntent: PendingIntent =
             PendingIntent.getService(this, 0, disconnectIntent, PendingIntent.FLAG_IMMUTABLE)
 
-        val intent = Intent(this, MainActivity::class.java).apply {
+        // Main Activity Intent
+        val mainIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val pendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val mainPendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, mainIntent, PendingIntent.FLAG_IMMUTABLE)
 
-        val contentText = if (isConnected) "Connected" else "Trying to connect"
+        // Clipboard copy action intent for ShareToPc activity
+        val clipboardIntent = Intent(this, ShareToPc::class.java).apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain" // Indicate that we want to send text (clipboard)
+        }
+        val clipboardPendingIntent: PendingIntent =
+            PendingIntent.getActivity(this, 0, clipboardIntent, PendingIntent.FLAG_IMMUTABLE)
 
+        val contentText = if (isConnected) "Connected to $deviceName" else "Trying to connect to $deviceName"
         val actionText = if (isConnected) "Disconnect" else "Stop"
 
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Device Connection Status")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(mainPendingIntent)
             .setOngoing(true)
             .setSilent(true)
             .addAction(R.drawable.ic_launcher_foreground, actionText, disconnectPendingIntent)
+            // Add clipboard action
+            .addAction(R.drawable.ic_launcher_foreground, "Copy Clipboard", clipboardPendingIntent)
             .build()
     }
-
 
     private fun sendActiveNotifications() {
         val intent = Intent(ACTION_SEND_ACTIVE_NOTIFICATIONS).apply { setPackage(packageName) }
@@ -496,7 +526,7 @@ class NetworkService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1
         const val EXTRA_HOST_ADDRESS = "extra_host_address"
-        const val NEW_DEVICE = "new_device"
+        const val DEVICE_NAME = "device_name"
     }
 }
 
