@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import sefirah.common.R
+import sefirah.domain.model.BatteryState
 import sefirah.domain.model.ConnectionState
 import sefirah.domain.model.PairedDevice
 import sefirah.common.util.base64ToBitmap
@@ -40,6 +41,7 @@ fun DeviceCard(
     device: PairedDevice,
     onClick: () -> Unit,
     onSyncAction: () -> Unit,
+    battery: BatteryState? = null,
 ) {
     Card(
         onClick = onClick,
@@ -80,6 +82,29 @@ fun DeviceCard(
                         else -> stringResource(R.string.status_disconnected)
                     }
                     Text(text = connectionStateText, color = MaterialTheme.colorScheme.primary)
+
+                    if (device.connectionState.isConnected && battery != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(
+                                    if (battery.isCharging) R.drawable.ic_battery_charging
+                                    else R.drawable.ic_battery
+                                ),
+                                contentDescription = stringResource(R.string.battery_status),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.battery_level, battery.batteryLevel),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 }
 
                 IconToggleButton(

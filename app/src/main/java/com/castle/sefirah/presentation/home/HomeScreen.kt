@@ -39,6 +39,7 @@ fun HomeScreen(
     val activeSessions by viewModel.activeSessions.collectAsState()
     val audioDevices by viewModel.audioDevices.collectAsState()
     val actions by viewModel.actions.collectAsState()
+    val batteryByDevice by viewModel.batteryByDevice.collectAsState()
 
     // Bottom sheet state
     val scope = rememberCoroutineScope()
@@ -71,6 +72,7 @@ fun HomeScreen(
                 item(key = "devices") {
                     SwipeableDevicesCard(
                         devices = pairedDevicesList,
+                        batteryByDevice = batteryByDevice,
                         onDeviceSelected = { device ->
                             connectionViewModel.selectDevice(device)
                         },

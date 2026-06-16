@@ -72,6 +72,7 @@ import sefirah.domain.model.RingerModeState
 import sefirah.domain.model.SocketMessage
 import sefirah.domain.util.MessageSerializer
 import sefirah.network.extensions.ActionHandler
+import sefirah.network.extensions.RemoteDeviceStatusHandler
 import sefirah.network.extensions.cancelPairingVerificationNotification
 import sefirah.network.extensions.handleMessage
 import sefirah.network.extensions.setNotification
@@ -112,6 +113,8 @@ class NetworkService : Service() {
     @Inject lateinit var smsHandler: SmsHandler
 
     @Inject lateinit var actionHandler: ActionHandler
+
+    @Inject lateinit var remoteDeviceStatusHandler: RemoteDeviceStatusHandler
 
     @Inject lateinit var deviceManager: DeviceManager
 
@@ -582,6 +585,7 @@ class NetworkService : Service() {
 
         remotePlaybackHandler.clearDeviceData(device.deviceId)
         actionHandler.clearDeviceActions(device.deviceId)
+        remoteDeviceStatusHandler.clearDeviceStatus(device.deviceId)
     }
 
     private suspend fun disconnectDevice(device: DiscoveredDevice) {
