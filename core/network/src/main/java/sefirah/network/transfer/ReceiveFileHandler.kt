@@ -190,13 +190,20 @@ class ReceiveFileHandler(
             preferencesRepository?.getStorageLocation()?.first()?.isNotEmpty() == true -> {
                 val storageUri = preferencesRepository.getStorageLocation().first().toUri()
                 val directory = DocumentFile.fromTreeUri(context, storageUri)
-                directory?.createFile(metadata.mimeType, metadata.fileName)?.uri
+                    ?: throw IOException("Failed to access custom storage")
+                val fileName = getUniqueFileName(metadata.fileName) { candidate ->
+                    directory.findFile(candidate) != null
+                }
+                directory.createFile(metadata.mimeType, fileName)?.uri
                     ?: throw IOException("Failed to create file in custom storage")
             }
 
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                val fileName = getUniqueFileName(metadata.fileName) { candidate ->
+                    downloadFileExists(candidate)
+                }
                 val values = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, metadata.fileName)
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
                     put(MediaStore.Downloads.MIME_TYPE, metadata.mimeType)
                     put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                 }
@@ -206,12 +213,51 @@ class ReceiveFileHandler(
 
             else -> {
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                val file = File(downloadsDir, metadata.fileName).apply {
-                    if (!exists()) createNewFile()
+                val fileName = getUniqueFileName(metadata.fileName) { candidate ->
+                    File(downloadsDir, candidate).exists()
                 }
+                val file = File(downloadsDir, fileName)
+                if (!file.createNewFile()) throw IOException("Failed to create file in Downloads")
                 Uri.fromFile(file)
             }
         }
+    }
+
+    private fun getUniqueFileName(
+        fileName: String,
+        exists: (String) -> Boolean
+    ): String {
+        if (!exists(fileName)) return fileName
+
+        val lastDotIndex = fileName.lastIndexOf('.')
+        val hasExtension = lastDotIndex > 0 && lastDotIndex < fileName.lastIndex
+        val baseName = if (hasExtension) fileName.substring(0, lastDotIndex) else fileName
+        val extension = if (hasExtension) fileName.substring(lastDotIndex) else ""
+
+        var copyIndex = 1
+        var candidate: String
+        do {
+            candidate = "$baseName ($copyIndex)$extension"
+            copyIndex++
+        } while (exists(candidate))
+
+        return candidate
+    }
+
+    private fun downloadFileExists(fileName: String): Boolean {
+        val projection = arrayOf(MediaStore.Downloads._ID)
+        val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} = ?"
+        val selectionArgs = arrayOf(fileName, "${Environment.DIRECTORY_DOWNLOADS}/")
+
+        return context.contentResolver.query(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            null
+        )?.use { cursor ->
+            cursor.moveToFirst()
+        } ?: false
     }
 
     companion object {
