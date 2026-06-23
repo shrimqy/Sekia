@@ -1,6 +1,7 @@
 package sefirah.common.util
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,11 +16,14 @@ data class PermissionStates(
     val notificationGranted: Boolean = false,
     val batteryGranted: Boolean = false,
     val locationGranted: Boolean = false,
+    val nearbyDevicesGranted: Boolean = false,
+    val overlayGranted: Boolean = false,
     val storageGranted: Boolean = false,
     val accessibilityGranted: Boolean = false,
     val notificationListenerGranted: Boolean = false,
     val readSensitiveNotificationsGranted: Boolean = false,
     val smsPermissionGranted: Boolean = false,
+    val contactsGranted: Boolean = false,
     val phoneStateGranted: Boolean = false
 )
 
@@ -66,6 +70,25 @@ fun checkLocationPermissions(
     }
     
     return hasFineLocation && hasBackgroundLocation
+}
+
+@SuppressLint("InlinedApi")
+val NEARBY_DEVICES_PERMISSIONS = arrayOf(
+    Manifest.permission.BLUETOOTH_CONNECT,
+    Manifest.permission.BLUETOOTH_SCAN,
+)
+
+fun nearbyDevicesPermissionGranted(
+    context: Context,
+    onGranted: (String) -> Unit = {}
+): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+
+    val allGranted = NEARBY_DEVICES_PERMISSIONS.all {
+        context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+    }
+    if (allGranted) NEARBY_DEVICES_PERMISSIONS.forEach { onGranted(it) }
+    return allGranted
 }
 
 fun checkStoragePermission(
@@ -137,18 +160,31 @@ fun isContactsPermissionGranted(context: Context) : Boolean {
     return context.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
 }
 
+fun contactsPermissionGranted(
+    context: Context,
+    onGranted: (String) -> Unit = {}
+): Boolean {
+    val granted = context.checkSelfPermission(Manifest.permission.READ_CONTACTS) ==
+        PackageManager.PERMISSION_GRANTED
+    if (granted) {
+        onGranted(Manifest.permission.READ_CONTACTS)
+    }
+    return granted
+}
+
 fun phoneStatePermissionGranted(
     context: Context,
     onGranted: (String) -> Unit = {}
 ): Boolean {
     val phoneStateGranted = context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) ==
         PackageManager.PERMISSION_GRANTED
-    val callLogGranted = context.checkSelfPermission(Manifest.permission.READ_CALL_LOG) ==
-        PackageManager.PERMISSION_GRANTED
-    val bothGranted = phoneStateGranted && callLogGranted
-    if (bothGranted) {
+    if (phoneStateGranted) {
         onGranted(Manifest.permission.READ_PHONE_STATE)
-        onGranted(Manifest.permission.READ_CALL_LOG)
     }
-    return bothGranted
+    return phoneStateGranted
+}
+
+
+fun isCallLogsPermissionGranted(context: Context) : Boolean {
+    return context.checkSelfPermission(Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED
 }

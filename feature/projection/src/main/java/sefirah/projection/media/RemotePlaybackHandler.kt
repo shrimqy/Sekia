@@ -91,6 +91,10 @@ class RemotePlaybackHandler @Inject constructor(
     }
 
     suspend fun handlePlaybackSessionUpdates(deviceId: String, playbackSession: PlaybackInfo) {
+        if (!preferencesRepository.readMediaSessionSettingsForDevice(deviceId).first()) {
+            clearDeviceData(deviceId)
+            return
+        }
         when (playbackSession.infoType) {
             PlaybackInfoType.PlaybackInfo -> addSession(deviceId, playbackSession)
             PlaybackInfoType.RemovedSession -> removeSession(deviceId, playbackSession)
@@ -173,10 +177,13 @@ class RemotePlaybackHandler @Inject constructor(
 
 
     private suspend fun showMediaSession(deviceId: String, session: PlaybackInfo) {
-        if (isSpotify(session) || !preferencesRepository.readMediaSessionSettingsForDevice(deviceId).first()) {
+        if (isSpotify(session) || !preferencesRepository.readMediaSessionNotificationSettingsForDevice(deviceId).first()
+        ) {
             closeMediaNotification()
             return
         }
+
+        val remoteVolumeControlEnabled = preferencesRepository.readRemoteVolumeControlSettingsForDevice(deviceId).first()
 
         scope.launch(Dispatchers.Main) {
             val metadata = MediaMetadataCompat.Builder()
@@ -274,7 +281,7 @@ class RemotePlaybackHandler @Inject constructor(
             val audioDevicesForDevice = _audioDevicesByDevice.value[deviceId] ?: emptyList()
             val currentAudioDevice = audioDevicesForDevice.firstOrNull { it.isSelected } ?: audioDevicesForDevice.firstOrNull()
 
-            if (session.isPlaying) {
+            if (session.isPlaying && remoteVolumeControlEnabled) {
                 mediaSession.setPlaybackToRemote(object : VolumeProviderCompat(
                     VOLUME_CONTROL_ABSOLUTE,
                     getMaxVolume(),
@@ -283,6 +290,20 @@ class RemotePlaybackHandler @Inject constructor(
                     override fun onSetVolumeTo(volume: Int) {
                         currentVolume = volume
                         val normalizedVolume = volume.toFloat() / maxVolume
+                        if (currentAudioDevice != null) {
+                            val action = MediaAction(MediaActionType.VolumeUpdate, currentAudioDevice.deviceId, normalizedVolume.toDouble())
+                            networkManager.sendMessage(deviceId, action)
+                        }
+                    }
+
+                    override fun onAdjustVolume(direction: Int) {
+                        val newVolume = when (direction) {
+                            AudioManager.ADJUST_RAISE -> minOf(currentVolume + 1, maxVolume)
+                            AudioManager.ADJUST_LOWER -> maxOf(currentVolume - 1, 0)
+                            else -> return
+                        }
+                        currentVolume = newVolume
+                        val normalizedVolume = newVolume.toFloat() / maxVolume
                         if (currentAudioDevice != null) {
                             val action = MediaAction(MediaActionType.VolumeUpdate, currentAudioDevice.deviceId, normalizedVolume.toDouble())
                             networkManager.sendMessage(deviceId, action)

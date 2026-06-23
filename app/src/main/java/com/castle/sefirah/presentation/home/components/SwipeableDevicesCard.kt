@@ -26,12 +26,14 @@ import androidx.navigation.NavController
 import com.castle.sefirah.navigation.SyncRoute
 import com.castle.sefirah.presentation.common.components.DeviceCard
 import sefirah.common.R
+import sefirah.domain.model.BatteryState
 import sefirah.domain.model.PairedDevice
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 fun SwipeableDevicesCard(
     devices: List<PairedDevice>,
+    batteryByDevice: Map<String, BatteryState>,
     onDeviceSelected: (PairedDevice) -> Unit,
     onSyncAction: (PairedDevice) -> Unit,
     onDeviceClick: (PairedDevice) -> Unit,
@@ -60,6 +62,7 @@ fun SwipeableDevicesCard(
                 key(device.deviceId) {
                     DeviceCard(
                         device = device,
+                        battery = batteryByDevice[device.deviceId],
                         onSyncAction = { onSyncAction(device) },
                         onClick = { onDeviceClick(device) },
                     )

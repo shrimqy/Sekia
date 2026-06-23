@@ -137,7 +137,17 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override fun readCallStateSyncSettingsForDevice(deviceId: String): Flow<Boolean> {
         return datastore.data.map { preferences ->
-            preferences[deviceCallStateSyncKey(deviceId)] != false
+            preferences[deviceCallStateSyncKey(deviceId)] == true
+        }
+    }
+
+    override suspend fun saveCallLogSyncSettingsForDevice(deviceId: String, callLogSync: Boolean) {
+        deviceCallLogSyncKey(deviceId).update(callLogSync)
+    }
+
+    override fun readCallLogSyncSettingsForDevice(deviceId: String): Flow<Boolean> {
+        return datastore.data.map { preferences ->
+            preferences[deviceCallLogSyncKey(deviceId)] != false
         }
     }
 
@@ -151,13 +161,33 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveMediaSessionSettingsForDevice(deviceId: String, showMediaSession: Boolean) {
-        deviceMediaSessionKey(deviceId).update(showMediaSession)
+    override suspend fun saveMediaSessionSettingsForDevice(deviceId: String, enabled: Boolean) {
+        deviceMediaSessionKey(deviceId).update(enabled)
     }
 
     override fun readMediaSessionSettingsForDevice(deviceId: String): Flow<Boolean> {
         return datastore.data.map { preferences ->
             preferences[deviceMediaSessionKey(deviceId)] != false
+        }
+    }
+
+    override suspend fun saveMediaSessionNotificationSettingsForDevice(deviceId: String, enabled: Boolean) {
+        deviceMediaSessionNotificationKey(deviceId).update(enabled)
+    }
+
+    override fun readMediaSessionNotificationSettingsForDevice(deviceId: String): Flow<Boolean> {
+        return datastore.data.map { preferences ->
+            preferences[deviceMediaSessionNotificationKey(deviceId)] != false
+        }
+    }
+
+    override suspend fun saveRemoteVolumeControlSettingsForDevice(deviceId: String, enabled: Boolean) {
+        deviceRemoteVolumeControlKey(deviceId).update(enabled)
+    }
+
+    override fun readRemoteVolumeControlSettingsForDevice(deviceId: String): Flow<Boolean> {
+        return datastore.data.map { preferences ->
+            preferences[deviceRemoteVolumeControlKey(deviceId)] == true
         }
     }
 
@@ -195,9 +225,12 @@ class PreferencesRepositoryImpl @Inject constructor(
                 clipboardSync = preferences[deviceClipboardSyncKey(deviceId)] != false,
                 messageSync = preferences[deviceMessageSyncKey(deviceId)] != false,
                 notificationSync = preferences[deviceNotificationSyncKey(deviceId)] != false,
-                callStateSync = preferences[deviceCallStateSyncKey(deviceId)] != false,
+                callStateSync = preferences[deviceCallStateSyncKey(deviceId)] == true,
+                callLogSync = preferences[deviceCallLogSyncKey(deviceId)] != false,
                 imageClipboard = preferences[deviceImageClipboardKey(deviceId)] != false,
                 mediaSession = preferences[deviceMediaSessionKey(deviceId)] != false,
+                mediaSessionNotification = preferences[deviceMediaSessionNotificationKey(deviceId)] != false,
+                remoteVolumeControl = preferences[deviceRemoteVolumeControlKey(deviceId)] == true,
                 mediaPlayerControl = preferences[deviceMediaPlayerControlKey(deviceId)] != false,
                 remoteStorage = preferences[deviceRemoteStorageKey(deviceId)] == true
             )
@@ -220,8 +253,11 @@ class PreferencesRepositoryImpl @Inject constructor(
         fun deviceMessageSyncKey(deviceId: String) = booleanPreferencesKey("messageSync_$deviceId")
         fun deviceNotificationSyncKey(deviceId: String) = booleanPreferencesKey("notificationSync_$deviceId")
         fun deviceCallStateSyncKey(deviceId: String) = booleanPreferencesKey("callStateSync_$deviceId")
+        fun deviceCallLogSyncKey(deviceId: String) = booleanPreferencesKey("callLogSync_$deviceId")
         fun deviceImageClipboardKey(deviceId: String) = booleanPreferencesKey("imageClipboard_$deviceId")
         fun deviceMediaSessionKey(deviceId: String) = booleanPreferencesKey("mediaSession_$deviceId")
+        fun deviceMediaSessionNotificationKey(deviceId: String) = booleanPreferencesKey("mediaSessionNotification_$deviceId")
+        fun deviceRemoteVolumeControlKey(deviceId: String) = booleanPreferencesKey("remoteVolumeControl_$deviceId")
         fun deviceMediaPlayerControlKey(deviceId: String) = booleanPreferencesKey("mediaPlayerControl_$deviceId")
         fun deviceRemoteStorageKey(deviceId: String) = booleanPreferencesKey("remoteStorage_$deviceId")
     }

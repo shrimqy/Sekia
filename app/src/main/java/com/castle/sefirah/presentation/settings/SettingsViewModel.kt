@@ -1,6 +1,7 @@
 package com.castle.sefirah.presentation.settings
 
 import android.app.Application
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,16 +23,18 @@ import sefirah.common.util.checkBatteryOptimization
 import sefirah.common.util.checkLocationPermissions
 import sefirah.common.util.checkNotificationPermission
 import sefirah.common.util.checkStoragePermission
+import sefirah.common.util.contactsPermissionGranted
 import sefirah.common.util.isAccessibilityServiceEnabled
 import sefirah.common.util.isNotificationListenerEnabled
+import sefirah.common.util.nearbyDevicesPermissionGranted
 import sefirah.common.util.phoneStatePermissionGranted
 import sefirah.common.util.smsPermissionGranted
 import sefirah.database.AppRepository
 import sefirah.database.model.NetworkEntity
-import sefirah.domain.model.LocalDevice
 import sefirah.domain.interfaces.DeviceManager
 import sefirah.domain.interfaces.NetworkManager
 import sefirah.domain.interfaces.PreferencesRepository
+import sefirah.domain.model.LocalDevice
 import sefirah.network.NetworkDiscovery
 import javax.inject.Inject
 
@@ -109,18 +112,23 @@ class SettingsViewModel @Inject constructor(
             
             val notificationGranted = checkNotificationPermission(context, clearPermission)
             val locationGranted = checkLocationPermissions(context, clearPermission)
+            val nearbyDevicesGranted = nearbyDevicesPermissionGranted(context, clearPermission)
             val storageGranted = checkStoragePermission(context, clearPermission)
             val smsGranted = smsPermissionGranted(context, clearPermission)
+            val contactsGranted = contactsPermissionGranted(context, clearPermission)
             val phoneStateGranted = phoneStatePermissionGranted(context, clearPermission)
             
             _permissionStates.value = PermissionStates(
                 notificationGranted = notificationGranted,
                 batteryGranted = checkBatteryOptimization(context),
                 locationGranted = locationGranted,
+                nearbyDevicesGranted = nearbyDevicesGranted,
+                overlayGranted = Settings.canDrawOverlays(context),
                 storageGranted = storageGranted,
                 accessibilityGranted = isAccessibilityServiceEnabled(context, "${context.packageName}/${ClipboardListener::class.java.canonicalName}"),
                 notificationListenerGranted = isNotificationListenerEnabled(context),
                 smsPermissionGranted = smsGranted,
+                contactsGranted = contactsGranted,
                 phoneStateGranted = phoneStateGranted
             )
         }

@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 import sefirah.clipboard.ClipboardListener
 import sefirah.common.R
 import sefirah.common.util.isAccessibilityServiceEnabled
+import sefirah.common.util.isCallLogsPermissionGranted
 import sefirah.common.util.isNotificationListenerEnabled
 import sefirah.common.util.openAppSettings
 import sefirah.domain.model.PairedDevice
@@ -77,7 +78,8 @@ fun DeviceSettingsScreen(
     deviceId: String,
     viewModel: DeviceSettingsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
-    onNavigateToAddressScreen: () -> Unit
+    onNavigateToAddressScreen: () -> Unit,
+    onNavigateToMediaSessionSettings: () -> Unit,
 ) {
     val device by viewModel.device.collectAsState()
     val preferences by viewModel.preferences.collectAsState()
@@ -108,6 +110,7 @@ fun DeviceSettingsScreen(
     ) { padding ->
         val context = LocalContext.current
         val lifecycleOwner = LocalLifecycleOwner.current
+        val callLogsPermissionGranted = isCallLogsPermissionGranted(context)
         
         // Update permissions on resume
         DisposableEffect(lifecycleOwner.lifecycle) {
@@ -180,8 +183,8 @@ fun DeviceSettingsScreen(
                 SwitchPermissionPrefWidget(
                     title = stringResource(R.string.clipboard_sync_preference),
                     subtitle = stringResource(R.string.clipboard_sync_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_content_copy_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_content_copy),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_content_copy_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_content_copy),
                     granted = permissionStates.accessibilityGranted,
                     checked = preferences.clipboardSync && permissionStates.accessibilityGranted,
                     permission = null,
@@ -199,8 +202,8 @@ fun DeviceSettingsScreen(
                 SwitchPermissionPrefWidget(
                     title = stringResource(R.string.image_clipboard_preference),
                     subtitle = stringResource(R.string.image_clipboard_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_file_copy_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_file_copy),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_file_copy_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_file_copy),
                     checked = preferences.imageClipboard,
                     permission = null,
                     onRequest = {},
@@ -215,8 +218,8 @@ fun DeviceSettingsScreen(
                 SwitchPermissionPrefWidget(
                     title = stringResource(R.string.notification_sync_preference),
                     subtitle = stringResource(R.string.notification_sync_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_notifications_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_notifications),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_notifications_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_notifications),
                     granted = permissionStates.notificationListenerGranted,
                     checked = preferences.notificationSync && permissionStates.notificationListenerGranted,
                     permission = null,
@@ -236,8 +239,8 @@ fun DeviceSettingsScreen(
                 SwitchPermissionPrefWidget(
                     title = stringResource(R.string.message_sync_preference),
                     subtitle = stringResource(R.string.message_sync_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_chat_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_chat),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_chat_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_chat),
                     granted = permissionStates.smsPermissionGranted,
                     checked = preferences.messageSync && permissionStates.smsPermissionGranted,
                     permission = Manifest.permission_group.SMS,
@@ -257,17 +260,14 @@ fun DeviceSettingsScreen(
                 SwitchPermissionPrefWidget(
                     title = stringResource(R.string.call_notifier_preference),
                     subtitle = stringResource(R.string.call_notifier_preference_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_mobile_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_mobile_fill),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_call_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_call),
                     granted = permissionStates.phoneStateGranted,
                     checked = preferences.callStateSync && permissionStates.phoneStateGranted,
                     permission = Manifest.permission.READ_PHONE_STATE,
                     onRequest = {
                         phoneCallPermissionRequester.launch(
-                            arrayOf(
-                                Manifest.permission.READ_PHONE_STATE,
-                                Manifest.permission.READ_CALL_LOG
-                            )
+                            arrayOf(Manifest.permission.READ_PHONE_STATE)
                         )
                     },
                     onCheckedChanged = { checked ->
@@ -279,24 +279,32 @@ fun DeviceSettingsScreen(
 
             item {
                 SwitchPermissionPrefWidget(
+                    title = stringResource(R.string.call_log_sync_preference),
+                    subtitle = stringResource(R.string.call_log_sync_preference_subtitle),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_call_log_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_call_log),
+                    granted = callLogsPermissionGranted,
+                    checked = preferences.callLogSync && callLogsPermissionGranted,
+                    permission = Manifest.permission.READ_CALL_LOG,
+                    onRequest = { telephonyPermissionRequester.launch(Manifest.permission.READ_CALL_LOG) },
+                    onCheckedChanged = { checked ->
+                        viewModel.saveCallLogSyncSettings(checked)
+                    },
+                    viewModel = viewModel
+                )
+            }
+
+            item {
+                SwitchPreferenceWidget(
                     title = stringResource(R.string.media_session_preference),
                     subtitle = stringResource(R.string.media_session_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_computer_sound_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_computer_sound),
-                    granted = permissionStates.notificationGranted,
-                    checked = preferences.mediaSession && permissionStates.notificationGranted,
-                    permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        Manifest.permission.POST_NOTIFICATIONS
-                    } else null,
-                    onRequest = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            // Permission handled by system
-                        }
-                    },
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_computer_sound_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_computer_sound),
+                    checked = preferences.mediaSession,
                     onCheckedChanged = { checked ->
                         viewModel.saveMediaSessionSettings(checked)
                     },
-                    viewModel = viewModel
+                    onContentClick = onNavigateToMediaSessionSettings,
                 )
             }
 
@@ -304,8 +312,8 @@ fun DeviceSettingsScreen(
                 SwitchPermissionPrefWidget(
                     title = stringResource(R.string.media_player_control_preference),
                     subtitle = stringResource(R.string.media_player_control_subtitle),
-                    filledIcon = ImageVector.vectorResource(R.drawable.ic_play_circle_fill),
-                    outlinedIcon = ImageVector.vectorResource(R.drawable.ic_play_circle),
+                    checkedIcon = ImageVector.vectorResource(R.drawable.ic_play_circle_fill),
+                    uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_play_circle),
                     granted = permissionStates.notificationListenerGranted,
                     checked = preferences.mediaPlayerControl && permissionStates.notificationListenerGranted,
                     permission = null,
@@ -326,8 +334,8 @@ fun DeviceSettingsScreen(
                     SwitchPermissionPrefWidget(
                         title = stringResource(R.string.storage_access_preference),
                         subtitle = stringResource(R.string.storage_access_subtitle),
-                        filledIcon = ImageVector.vectorResource(R.drawable.ic_folder_fill),
-                        outlinedIcon = ImageVector.vectorResource(R.drawable.ic_folder),
+                        checkedIcon = ImageVector.vectorResource(R.drawable.ic_folder_fill),
+                        uncheckedIcon = ImageVector.vectorResource(R.drawable.ic_folder),
                         granted = permissionStates.storageGranted,
                         checked = preferences.remoteStorage && permissionStates.storageGranted,
                         permission = if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
@@ -475,14 +483,15 @@ private fun DeviceStatusInfo(
 fun SwitchPermissionPrefWidget(
     title: String,
     subtitle: String,
-    filledIcon: ImageVector,
-    outlinedIcon: ImageVector,
+    checkedIcon: ImageVector? = null,
+    uncheckedIcon: ImageVector? = null,
     granted: Boolean = true,
     checked: Boolean,
     permission: String?,
     onRequest: () -> Unit,
     onCheckedChanged: (Boolean) -> Unit,
-    viewModel: DeviceSettingsViewModel
+    viewModel: DeviceSettingsViewModel,
+    onContentClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val activity = context as Activity
@@ -511,12 +520,11 @@ fun SwitchPermissionPrefWidget(
 
     val openSettings = permission != null && !granted && !checked && hasRequestedBefore && !canShowRationale
 
-    val icon = if (checked) filledIcon else outlinedIcon
-
     SwitchPreferenceWidget(
         title = title,
         subtitle = subtitle,
-        icon = icon,
+        checkedIcon = checkedIcon,
+        uncheckedIcon = uncheckedIcon,
         checked = checked,
         onCheckedChanged = { isChecked ->
             if (isChecked) {
@@ -531,12 +539,13 @@ fun SwitchPermissionPrefWidget(
                     onRequest()
                 }
             }
-            
+
             scope.launch {
                 viewModel.updatePermissionStates()
                 onCheckedChanged(isChecked)
             }
-        }
+        },
+        onContentClick = onContentClick,
     )
 }
 

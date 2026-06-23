@@ -1,33 +1,38 @@
 package sefirah.network.extensions
 
 import android.app.NotificationManager
+import android.content.Intent
 import android.util.Log
 import kotlinx.coroutines.flow.first
+import sefirah.communication.bluetooth.BluetoothDiscoverableActivity
 import sefirah.domain.model.ActionInfo
 import sefirah.domain.model.AddressEntry
 import sefirah.domain.model.ApplicationList
 import sefirah.domain.model.AudioDeviceInfo
 import sefirah.domain.model.AudioStreamState
 import sefirah.domain.model.BaseRemoteDevice
-import sefirah.domain.model.ClipboardInfo
+import sefirah.domain.model.BatteryState
+import sefirah.domain.model.BluetoothPairingRequest
+import sefirah.domain.model.BluetoothPairingResult
 import sefirah.domain.model.ClearNotifications
-import sefirah.domain.model.Disconnect
-import sefirah.domain.model.RequestApplicationList
+import sefirah.domain.model.ClipboardInfo
 import sefirah.domain.model.ConnectionAck
 import sefirah.domain.model.ConnectionState
 import sefirah.domain.model.DeviceInfo
+import sefirah.domain.model.Disconnect
 import sefirah.domain.model.DiscoveredDevice
 import sefirah.domain.model.DndState
 import sefirah.domain.model.FileTransferInfo
+import sefirah.domain.model.MediaAction
 import sefirah.domain.model.NotificationAction
 import sefirah.domain.model.NotificationInfo
 import sefirah.domain.model.NotificationInfoType
+import sefirah.domain.model.NotificationReply
 import sefirah.domain.model.PairMessage
 import sefirah.domain.model.PairedDevice
 import sefirah.domain.model.PendingDeviceApproval
-import sefirah.domain.model.MediaAction
 import sefirah.domain.model.PlaybackInfo
-import sefirah.domain.model.NotificationReply
+import sefirah.domain.model.RequestApplicationList
 import sefirah.domain.model.RingerModeState
 import sefirah.domain.model.SocketMessage
 import sefirah.domain.model.TextMessage
@@ -66,6 +71,8 @@ suspend fun NetworkService.handleMessage(device: BaseRemoteDevice, message: Sock
                 is AudioDeviceInfo -> remotePlaybackHandler.handleAudioDevice(device.deviceId, message)
                 is AudioStreamState -> setStreamVolume(device, message)
                 is ActionInfo -> actionHandler.addAction(device.deviceId, message)
+                is BatteryState -> remoteDeviceStatusHandler.updateBattery(device.deviceId, message)
+                is BluetoothPairingRequest -> handleBluetoothMakeDiscoverable(device.deviceId)
                 else -> {}
             }
         }
@@ -195,4 +202,22 @@ fun NetworkService.setStreamVolume(device: PairedDevice, message: AudioStreamSta
             sendMessage(device.deviceId, actualMessage)
         }
     }
+}
+
+private fun NetworkService.handleBluetoothMakeDiscoverable(sourceDeviceId: String) {
+    val adapter = bluetoothManager.adapter
+    if (adapter == null || !adapter.isEnabled) {
+        Log.w(TAG, "Bluetooth unavailable/disabled; cannot open discoverable flow")
+        sendMessage(sourceDeviceId, BluetoothPairingResult(false))
+        return
+    }
+
+    val intent = BluetoothDiscoverableActivity.createIntent(this, sourceDeviceId).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    showBluetoothDiscoverableRequestNotification(sourceDeviceId)
+
+    runCatching { startActivity(intent) }
+        .onFailure { Log.w(TAG, "Bluetooth discoverable activity start failed", it) }
 }

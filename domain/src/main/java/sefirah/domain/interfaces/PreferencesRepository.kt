@@ -41,11 +41,20 @@ interface PreferencesRepository {
     suspend fun saveCallStateSyncSettingsForDevice(deviceId: String, callStateSync: Boolean)
     fun readCallStateSyncSettingsForDevice(deviceId: String): Flow<Boolean>
 
+    suspend fun saveCallLogSyncSettingsForDevice(deviceId: String, callLogSync: Boolean)
+    fun readCallLogSyncSettingsForDevice(deviceId: String): Flow<Boolean>
+
     suspend fun saveImageClipboardSettingsForDevice(deviceId: String, copyImagesToClipboard: Boolean)
     fun readImageClipboardSettingsForDevice(deviceId: String): Flow<Boolean>
     
-    suspend fun saveMediaSessionSettingsForDevice(deviceId: String, showMediaSession: Boolean)
+    suspend fun saveMediaSessionSettingsForDevice(deviceId: String, enabled: Boolean)
     fun readMediaSessionSettingsForDevice(deviceId: String): Flow<Boolean>
+
+    suspend fun saveMediaSessionNotificationSettingsForDevice(deviceId: String, enabled: Boolean)
+    fun readMediaSessionNotificationSettingsForDevice(deviceId: String): Flow<Boolean>
+
+    suspend fun saveRemoteVolumeControlSettingsForDevice(deviceId: String, enabled: Boolean)
+    fun readRemoteVolumeControlSettingsForDevice(deviceId: String): Flow<Boolean>
 
     suspend fun saveMediaPlayerControlSettingsForDevice(deviceId: String, enabled: Boolean)
     fun readMediaPlayerControlSettingsForDevice(deviceId: String): Flow<Boolean>

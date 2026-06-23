@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import sefirah.domain.model.ActionInfo
 import sefirah.domain.model.AudioDeviceInfo
+import sefirah.domain.model.BatteryState
 import sefirah.domain.model.MediaAction
 import sefirah.domain.model.MediaActionType
 import sefirah.domain.model.PlaybackInfo
@@ -18,6 +19,7 @@ import sefirah.domain.interfaces.DeviceManager
 import sefirah.domain.interfaces.NetworkManager
 import sefirah.projection.media.RemotePlaybackHandler
 import sefirah.network.extensions.ActionHandler
+import sefirah.network.extensions.RemoteDeviceStatusHandler
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,8 +27,12 @@ class HomeViewModel @Inject constructor(
     private val remotePlaybackHandler: RemotePlaybackHandler,
     private val deviceManager: DeviceManager,
     private val networkManager: NetworkManager,
-    actionHandler: ActionHandler
+    actionHandler: ActionHandler,
+    remoteDeviceStatusHandler: RemoteDeviceStatusHandler
 ) : ViewModel() {
+
+    val batteryByDevice: StateFlow<Map<String, BatteryState>> =
+        remoteDeviceStatusHandler.batteryByDevice
 
     val activeSessions: StateFlow<List<PlaybackInfo>> = deviceManager.selectedDeviceId
         .flatMapLatest { deviceId ->

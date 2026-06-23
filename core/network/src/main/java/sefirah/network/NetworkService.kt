@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.app.Service
 import android.app.WallpaperManager
+import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -34,29 +35,31 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import sefirah.clipboard.ClipboardHandler
 import sefirah.common.notifications.AppNotifications
 import sefirah.common.notifications.NotificationCenter
 import sefirah.common.util.checkStoragePermission
+import sefirah.common.util.drawableToBase64Compressed
+import sefirah.common.util.isCallLogsPermissionGranted
+import sefirah.common.util.isContactsPermissionGranted
 import sefirah.common.util.smsPermissionGranted
+import sefirah.communication.call.CallLogHelper
 import sefirah.communication.call.CallStateReceiver
+import sefirah.communication.sms.SmsHandler
 import sefirah.communication.utils.ContactsHelper
 import sefirah.communication.utils.TelephonyHelper
 import sefirah.database.AppRepository
 import sefirah.domain.interfaces.DeviceManager
 import sefirah.domain.interfaces.PreferencesRepository
 import sefirah.domain.interfaces.SocketFactory
-import sefirah.projection.media.RemotePlaybackHandler
-import sefirah.projection.media.PlaybackService
-import sefirah.communication.sms.SmsHandler
-import sefirah.notification.NotificationService
-import sefirah.clipboard.ClipboardHandler
 import sefirah.domain.model.AddressEntry
 import sefirah.domain.model.AudioStreamState
 import sefirah.domain.model.Authentication
+import sefirah.domain.model.BaseRemoteDevice
 import sefirah.domain.model.BatteryState
 import sefirah.domain.model.ClipboardInfo
-import sefirah.domain.model.ConnectionDetails
 import sefirah.domain.model.ConnectionAck
+import sefirah.domain.model.ConnectionDetails
 import sefirah.domain.model.ConnectionState
 import sefirah.domain.model.DeviceConnection
 import sefirah.domain.model.DeviceInfo
@@ -70,6 +73,7 @@ import sefirah.domain.model.RingerModeState
 import sefirah.domain.model.SocketMessage
 import sefirah.domain.util.MessageSerializer
 import sefirah.network.extensions.ActionHandler
+import sefirah.network.extensions.RemoteDeviceStatusHandler
 import sefirah.network.extensions.cancelPairingVerificationNotification
 import sefirah.network.extensions.handleMessage
 import sefirah.network.extensions.setNotification
@@ -77,8 +81,9 @@ import sefirah.network.transfer.FileTransferService
 import sefirah.network.transfer.SftpServer
 import sefirah.network.util.SslHelper
 import sefirah.network.util.getInstalledApps
-import sefirah.common.util.drawableToBase64Compressed
-import sefirah.domain.model.BaseRemoteDevice
+import sefirah.notification.NotificationService
+import sefirah.projection.media.PlaybackService
+import sefirah.projection.media.RemotePlaybackHandler
 import java.security.cert.X509Certificate
 import javax.inject.Inject
 import javax.net.ssl.SSLSocket
@@ -110,12 +115,15 @@ class NetworkService : Service() {
 
     @Inject lateinit var actionHandler: ActionHandler
 
+    @Inject lateinit var remoteDeviceStatusHandler: RemoteDeviceStatusHandler
+
     @Inject lateinit var deviceManager: DeviceManager
 
     @Inject lateinit var fileTransferService: FileTransferService
 
     @Inject lateinit var callStateReceiver: CallStateReceiver
 
+    val bluetoothManager by lazy { getSystemService(BLUETOOTH_SERVICE) as BluetoothManager }
     val audioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
     val notificationManager by lazy { getSystemService(NOTIFICATION_SERVICE) as NotificationManager }
 
@@ -578,6 +586,7 @@ class NetworkService : Service() {
 
         remotePlaybackHandler.clearDeviceData(device.deviceId)
         actionHandler.clearDeviceActions(device.deviceId)
+        remoteDeviceStatusHandler.clearDeviceStatus(device.deviceId)
     }
 
     private suspend fun disconnectDevice(device: DiscoveredDevice) {
@@ -626,7 +635,10 @@ class NetworkService : Service() {
         )
     }
 
-    suspend fun finalizeConnection(device: PairedDevice, isNewDevice: Boolean) {
+    suspend fun finalizeConnection(
+        device: PairedDevice,
+        isNewDevice: Boolean,
+    ) {
         sendDeviceInfo(device)
         sendDeviceStatus(device.deviceId)
 
@@ -642,21 +654,27 @@ class NetworkService : Service() {
             notificationHandler.sendActiveNotifications(device.deviceId)
         }
 
+        playbackService.sendActiveSessions(device.deviceId)
+
+        if (isNewDevice) {
+            sendInstalledApps(device)
+            sendContacts(device)
+        }
+
+        if (preferencesRepository.readCallLogSyncSettingsForDevice(device.deviceId).first()
+            && isCallLogsPermissionGranted(this)) {
+            CallLogHelper.getCallLogs(this).forEach {
+                sendMessage(device.deviceId, it)
+            }
+        }
+
         if (preferencesRepository.readMessageSyncSettingsForDevice(device.deviceId).first()
             && smsPermissionGranted(this)
         ) {
             smsHandler.sendAllConversations(device.deviceId)
         }
 
-        playbackService.sendActiveSessions(device.deviceId)
-
         networkDiscovery.saveCurrentNetworkAsTrusted()
-
-        if (isNewDevice) {
-            sendInstalledApps(device)
-            sendContacts(device)
-        }
-        callStateReceiver.register(this)
     }
 
     private suspend fun sendAuthMessage(writeChannel: ByteWriteChannel) {
@@ -715,7 +733,7 @@ class NetworkService : Service() {
 
     private fun sendContacts(device: PairedDevice) {
         try {
-            if (smsPermissionGranted(this)) return
+            if (!isContactsPermissionGranted(this)) return
 
             ContactsHelper().getAllContacts(this).forEach { contact ->
                 sendMessage(device.deviceId, contact)

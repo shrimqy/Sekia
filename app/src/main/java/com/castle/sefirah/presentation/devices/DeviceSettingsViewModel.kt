@@ -175,6 +175,18 @@ class DeviceSettingsViewModel @Inject constructor(
         }
     }
 
+    fun saveMediaSessionNotificationSettings(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.saveMediaSessionNotificationSettingsForDevice(deviceId, enabled)
+        }
+    }
+
+    fun saveRemoteVolumeControlSettings(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.saveRemoteVolumeControlSettingsForDevice(deviceId, enabled)
+        }
+    }
+
     fun saveMediaPlayerControlSettings(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.saveMediaPlayerControlSettingsForDevice(deviceId, enabled)
@@ -190,6 +202,12 @@ class DeviceSettingsViewModel @Inject constructor(
     fun saveCallStateSyncSettings(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.saveCallStateSyncSettingsForDevice(deviceId, enabled)
+        }
+    }
+
+    fun saveCallLogSyncSettings(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.saveCallLogSyncSettingsForDevice(deviceId, enabled)
         }
     }
 
