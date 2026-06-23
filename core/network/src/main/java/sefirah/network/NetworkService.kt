@@ -31,6 +31,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import sefirah.common.notifications.AppNotifications
@@ -150,15 +151,6 @@ class NetworkService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            Actions.START_SERVICE.name -> {
-                Log.d(TAG, "Network Service started explicitly")
-            }
-
-            Actions.STOP_SERVICE.name -> {
-                Log.d(TAG, "Stopping Network Service via intent")
-                stopServiceGracefully()
-            }
-
             Actions.CONNECT.name -> {
                 val connectionDetails = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra(EXTRA_CONNECTION_DETAILS, ConnectionDetails::class.java)
@@ -849,74 +841,48 @@ class NetworkService : Service() {
         }
     }
 
-    private fun stopServiceGracefully() {
-        scope.launch {
+    override fun onDestroy() {
+        serverAcceptJob?.cancel()
+        try {
+            tcpServerSocket?.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error closing TCP server", e)
+        }
+
+        // Clean disconnect all peers
+        runBlocking {
             deviceManager.pairedDevices.value.forEach { device ->
                 if (device.connectionState.isConnected) {
                     sendMessage(device.deviceId, Disconnect)
                     disconnectDevice(device, true)
                 }
             }
-            withContext(Dispatchers.Main) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                } else {
-                    @Suppress("DEPRECATION")
-                    stopForeground(true)
-                }
-                stopSelf()
-            }
         }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
         scope.cancel()
+
         unregisterReceiver(batteryReceiver)
         unregisterReceiver(interruptionFilterReceiver)
         unregisterReceiver(screenOnReceiver)
         unregisterReceiver(wifiStateReceiver)
         callStateReceiver.unregister(this)
+        networkDiscovery.unregister()
+
         sftpServer.stop()
         remotePlaybackHandler.release()
         smsHandler.stop()
-        serverAcceptJob?.cancel()
 
-        try {
-            tcpServerSocket?.close()
-            Log.d(TAG, "TCP server closed")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error closing TCP server", e)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
         }
+        super.onDestroy()
     }
 
     companion object {
-        fun start(context: Context) {
-            val serviceIntent = Intent(context, NetworkService::class.java).apply {
-                action = Actions.START_SERVICE.name
-            }
-
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    context.startForegroundService(serviceIntent)
-                } else {
-                    context.startService(serviceIntent)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start NetworkService", e)
-            }
-        }
-
-        fun stop(context: Context) {
-            val stopIntent = Intent(context, NetworkService::class.java).apply {
-                action = Actions.STOP_SERVICE.name
-            }
-            context.startService(stopIntent)
-        }
-
         enum class Actions {
-            START_SERVICE,
-            STOP_SERVICE,
             CONNECT,
             APPROVE_DEVICE,
             REJECT_DEVICE,

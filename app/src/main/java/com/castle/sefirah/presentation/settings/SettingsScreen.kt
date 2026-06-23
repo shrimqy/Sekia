@@ -52,7 +52,6 @@ import kotlinx.coroutines.launch
 import sefirah.common.R
 import sefirah.common.util.getReadablePathFromUri
 import sefirah.common.util.openAppSettings
-import sefirah.network.NetworkService
 
 @Composable
 fun SettingsScreen(
@@ -219,7 +218,7 @@ fun SettingsScreen(
                 subtitle = "Disconnect all devices, stop the service, and close the application",
                 icon = ImageVector.vectorResource(R.drawable.ic_close),
                 onPreferenceClick = {
-                    NetworkService.stop(context)
+                    viewModel.stopService()
                     activity?.finishAffinity()
                 }
             )

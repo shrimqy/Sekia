@@ -29,16 +29,20 @@ import com.castle.sefirah.ui.theme.SefirahTheme
 import com.castle.sefirah.navigation.graphs.RootNavGraph
 import dagger.hilt.android.AndroidEntryPoint
 import sefirah.common.notifications.AppNotifications
+import sefirah.domain.interfaces.NetworkManager
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var networkManager: NetworkManager
     private val viewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
         installSplashScreen()
-        
+        networkManager.startService()
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setupNotificationChannels()
         }

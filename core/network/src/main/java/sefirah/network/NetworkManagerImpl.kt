@@ -4,12 +4,14 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.IBinder
+import android.util.Log
+import sefirah.domain.interfaces.NetworkManager
+import sefirah.domain.model.ClipboardInfo
 import sefirah.domain.model.ConnectionDetails
 import sefirah.domain.model.PairedDevice
 import sefirah.domain.model.SocketMessage
-import sefirah.domain.interfaces.NetworkManager
-import sefirah.domain.model.ClipboardInfo
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,9 +32,23 @@ class NetworkManagerImpl @Inject constructor(
         }
     }
 
-    init {
-        NetworkService.start(context)
+    override fun startService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
         context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    override fun stopService() {
+        networkService = null
+        try {
+            context.unbindService(serviceConnection)
+        } catch (e: IllegalArgumentException) {
+            Log.w(TAG, "Service not bound when unbinding", e)
+        }
+        context.stopService(serviceIntent)
     }
 
     override suspend fun connectPaired(device: PairedDevice) {
@@ -65,5 +81,9 @@ class NetworkManagerImpl @Inject constructor(
 
     override suspend fun rejectDeviceConnection(deviceId: String) {
         networkService?.rejectDeviceConnection(deviceId)
+    }
+
+    companion object {
+        private const val TAG = "NetworkManager"
     }
 }

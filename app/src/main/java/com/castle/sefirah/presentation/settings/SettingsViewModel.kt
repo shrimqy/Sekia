@@ -30,6 +30,7 @@ import sefirah.database.AppRepository
 import sefirah.database.model.NetworkEntity
 import sefirah.domain.model.LocalDevice
 import sefirah.domain.interfaces.DeviceManager
+import sefirah.domain.interfaces.NetworkManager
 import sefirah.domain.interfaces.PreferencesRepository
 import sefirah.network.NetworkDiscovery
 import javax.inject.Inject
@@ -40,6 +41,7 @@ private const val TAG = "SettingsViewModel"
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val appRepository: AppRepository,
+    private val networkManager: NetworkManager,
     networkDiscovery: NetworkDiscovery,
     deviceManager: DeviceManager,
     application: Application
@@ -122,6 +124,10 @@ class SettingsViewModel @Inject constructor(
                 phoneStateGranted = phoneStateGranted
             )
         }
+    }
+
+    fun stopService() {
+        networkManager.stopService()
     }
 
     fun saveAppEntry() {

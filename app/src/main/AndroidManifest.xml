@@ -100,8 +100,6 @@
                 <action android:name="CONNECT" />
                 <action android:name="DISCONNECT" />
                 <action android:name="SEND_CLIPBOARD" />
-                <action android:name="START_SERVICE" />
-                <action android:name="STOP_SERVICE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
@@ -160,13 +158,13 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name="sefirah.network.BootReceiver"
+        <receiver android:name="sefirah.network.BroadcastReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="START_SERVICE" />
+                <action android:name="STOP_SERVICE" />
             </intent-filter>
         </receiver>
 
