@@ -11,6 +11,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import sefirah.domain.interfaces.SocketFactory
 import sefirah.network.util.NetworkHelper.localAddress
 import sefirah.network.util.SslHelper
+import java.net.InetSocketAddress as JavaInetSocketAddress
+import java.net.Socket
 import javax.inject.Inject
 import javax.inject.Singleton
 import javax.net.ssl.SSLServerSocket
@@ -24,9 +26,20 @@ class SocketFactoryImpl @Inject constructor() : SocketFactory {
         return try {
             Log.d(TAG, "Connecting to $address:$port")
             val sslContext = SslHelper.sslContext(certificate)
+            val localAddr = localAddress
+            if (localAddr == null) {
+                Log.e(TAG, "No local IP address available — cannot bind socket")
+                return null
+            }
             withTimeoutOrNull(3000L) {
                 withContext(Dispatchers.IO) {
-                    (sslContext.socketFactory.createSocket(address, port) as SSLSocket).apply {
+                    val socket = Socket()
+                    socket.bind(JavaInetSocketAddress(localAddr, 0))
+                    socket.connect(JavaInetSocketAddress(address, port), 3000)
+                    Log.d(TAG, "Bound to $localAddr, connecting to $address:$port")
+                    (sslContext.socketFactory.createSocket(
+                        socket, address, port, true
+                    ) as SSLSocket).apply {
                         startHandshake()
                     }
                 }
