@@ -18,7 +18,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -107,21 +111,31 @@ fun DeviceCard(
                     }
                 }
 
-                IconToggleButton(
-                    checked = device.connectionState.isConnected,
-                    onCheckedChange = { onSyncAction() },
-                    shapes = IconButtonDefaults.toggleableShapes(),
-                    colors = IconButtonDefaults.filledIconToggleButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(text = if (device.connectionState.isConnected) "Stop sync" else "Start sync")
+                        }
+                    },
+                    state = rememberTooltipState()
                 ) {
-                    Icon(
-                        painter = if (device.connectionState.isConnected) painterResource(R.drawable.ic_sync_disabled) else painterResource(R.drawable.ic_sync),
-                        contentDescription = if (device.connectionState.isConnected) "Stop sync" else "Start sync",
-                    )
+                    IconToggleButton(
+                        checked = device.connectionState.isConnected,
+                        onCheckedChange = { onSyncAction() },
+                        shapes = IconButtonDefaults.toggleableShapes(),
+                        colors = IconButtonDefaults.filledIconToggleButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            checkedContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                    ) {
+                        Icon(
+                            painter = if (device.connectionState.isConnected) painterResource(R.drawable.ic_sync_disabled) else painterResource(R.drawable.ic_sync),
+                            contentDescription = if (device.connectionState.isConnected) "Stop sync" else "Start sync",
+                        )
+                    }
                 }
             }
 
