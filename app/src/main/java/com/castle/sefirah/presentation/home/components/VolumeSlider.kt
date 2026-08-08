@@ -17,6 +17,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,13 +64,23 @@ fun VolumeSlider(
             .fillMaxWidth()
             .padding(top = 8.dp)
     ) {
-        IconButton(onClick = toggleMute) {
-            Icon(
-                imageVector = if (isMuted) ImageVector.vectorResource(R.drawable.ic_volume_off_fill) else ImageVector.vectorResource(R.drawable.ic_volume_up_fill),
-                contentDescription = "Volume Icon",
-                tint = MaterialTheme.colorScheme.surfaceTint,
-                modifier = Modifier.size(24.dp).padding(start = 0.dp)
-            )
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+            tooltip = {
+                PlainTooltip {
+                    Text(text = if (isMuted) "Unmute" else "Mute")
+                }
+            },
+            state = rememberTooltipState()
+        ) {
+            IconButton(onClick = toggleMute) {
+                Icon(
+                    imageVector = if (isMuted) ImageVector.vectorResource(R.drawable.ic_volume_off_fill) else ImageVector.vectorResource(R.drawable.ic_volume_up_fill),
+                    contentDescription = if (isMuted) "Unmute" else "Mute",
+                    tint = MaterialTheme.colorScheme.surfaceTint,
+                    modifier = Modifier.size(24.dp).padding(start = 0.dp)
+                )
+            }
         }
         Slider(
             value = sliderPosition,
