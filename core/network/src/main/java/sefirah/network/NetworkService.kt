@@ -44,6 +44,7 @@ import sefirah.communication.utils.ContactsHelper
 import sefirah.communication.utils.TelephonyHelper
 import sefirah.database.AppRepository
 import sefirah.domain.interfaces.DeviceManager
+import sefirah.domain.interfaces.NetworkManager
 import sefirah.domain.interfaces.PreferencesRepository
 import sefirah.domain.interfaces.SocketFactory
 import sefirah.FeatureManager
@@ -117,6 +118,8 @@ class NetworkService : Service() {
 
     @Inject lateinit var bluetoothPairingHandler: BluetoothPairingHandler
 
+    @Inject lateinit var networkManager: NetworkManager
+
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val binder = LocalBinder()
 
@@ -144,6 +147,9 @@ class NetworkService : Service() {
     private val connections = mutableMapOf<String, DeviceConnection>()
 
     private var tcpServerPort by Delegates.notNull<Int>()
+
+    private var lastNotificationDeviceName: String? = null
+    private var lastNotificationDeviceId: String? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
@@ -227,6 +233,14 @@ class NetworkService : Service() {
                     sendClipboardMessage(ClipboardInfo("text/plain", text))
                 }
             }
+
+            Actions.REPOST_NOTIFICATION.name -> {
+                setNotification(lastNotificationDeviceName, lastNotificationDeviceId, AppNotifications.DEVICE_CONNECTION_ID)
+            }
+
+            Actions.EXIT.name -> {
+                networkManager.stopService()
+            }
         }
         return START_STICKY
     }
@@ -254,8 +268,12 @@ class NetworkService : Service() {
                     val deviceNames = connectedDevices.joinToString(", ") { it.deviceName }
                     // Only pass deviceId for disconnect action when single device connected
                     val deviceId = if (connectedDevices.size == 1) connectedDevices.first().deviceId else null
+                    lastNotificationDeviceName = deviceNames
+                    lastNotificationDeviceId = deviceId
                     setNotification(deviceNames, deviceId, AppNotifications.DEVICE_CONNECTION_ID)
                 } else {
+                    lastNotificationDeviceName = null
+                    lastNotificationDeviceId = null
                     setNotification(null, null, AppNotifications.DEVICE_CONNECTION_ID)
                 }
             }
@@ -835,7 +853,9 @@ class NetworkService : Service() {
             DISCONNECT,
             CANCEL_TRANSFER,
             SEND_CLIPBOARD,
-            SEND_FILES
+            SEND_FILES,
+            REPOST_NOTIFICATION,
+            EXIT
         }
 
         val PORT_RANGE = 5150..5169

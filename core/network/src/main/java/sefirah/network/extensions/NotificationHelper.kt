@@ -97,6 +97,18 @@ fun NetworkService.setNotification(
     }
     val clipboardPendingIntent: PendingIntent = PendingIntent.getActivity(this, 0, clipboardIntent, PendingIntent.FLAG_IMMUTABLE)
 
+    // Fired when the notification is swiped away, e.g. by OEM skins that allow dismissing ongoing notifications
+    val repostIntent = Intent(this, NetworkService::class.java).apply {
+        action = Actions.REPOST_NOTIFICATION.name
+    }
+    val repostPendingIntent: PendingIntent = PendingIntent.getService(this, 0, repostIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
+    // Exit action - fully stops the service
+    val exitIntent = Intent(this, NetworkService::class.java).apply {
+        action = Actions.EXIT.name
+    }
+    val exitPendingIntent: PendingIntent = PendingIntent.getService(this, 0, exitIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
     val contentText =  if (deviceName.isNullOrEmpty()) {
         getString(R.string.notification_status_disconnected)
     } else getString(R.string.notification_status_connected, deviceName)
@@ -108,12 +120,13 @@ fun NetworkService.setNotification(
         setContentTitle(getString(R.string.notification_device_connection))
         setContentText(contentText)
         setContentIntent(mainPendingIntent)
+        setDeleteIntent(repostPendingIntent)
         setOngoing(true)
         setSilent(true)
         setShowWhen(false)
     }
 
-    // Only add actions if connected
+    // Only add connection-dependent actions if connected
     if (!deviceName.isNullOrEmpty()) {
         // Disconnect action - only if single device (deviceId provided)
         if (deviceId != null) {
@@ -126,6 +139,8 @@ fun NetworkService.setNotification(
         }
         notificationBuilder.addAction(R.drawable.ic_launcher_foreground, getString(R.string.send_clipboard), clipboardPendingIntent)
     }
+
+    notificationBuilder.addAction(R.drawable.ic_launcher_foreground, getString(R.string.notification_exit_action), exitPendingIntent)
 
     startForeground(notificationId, notificationBuilder.build())
 }
