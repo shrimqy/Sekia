@@ -28,6 +28,17 @@ class WorkerManager @Inject constructor(
 
     private val userServiceArgs: Shizuku.UserServiceArgs by lazy { userServiceArgs() }
 
+    private val shizukuBinderReceivedListener = Shizuku.OnBinderReceivedListener {
+        if (watching) {
+            Log.i(TAG, "Shizuku binder received — restarting clipboard watcher")
+            startClipboardWatcher()
+        }
+    }
+
+    init {
+        Shizuku.addBinderReceivedListenerSticky(shizukuBinderReceivedListener)
+    }
+
     fun startClipboardWatcher() {
         watching = true
         thread(name = "sefirah-worker-start", isDaemon = true) {
@@ -101,6 +112,9 @@ class WorkerManager @Inject constructor(
                 Log.w(TAG, "Worker died")
                 if (w == null || worker === w || worker?.asBinder() == w.asBinder()) {
                     worker = null
+                    if (watching) {
+                        startClipboardWatcher()
+                    }
                 }
             }, 0)
         } catch (e: Exception) {
